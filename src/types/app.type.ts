@@ -13,11 +13,14 @@ export interface Podcast {
 export interface Episode {
   id: string
   podcastId: string
-  title: string
+  podcastName: string
+  name: string
   description?: string
-  releaseDate: Date | string
+  releaseDate: string
+  releaseDatePrecision: string
   durationMs?: number
-  audioUrl?: string
+  audioUrl?: string // audio_preview_url
+  uri?: string
 }
 
 export interface CalendarEvent {

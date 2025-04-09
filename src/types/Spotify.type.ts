@@ -1,5 +1,5 @@
 /**
- * Types for Spotify's podcast (show) search API response.
+ * Types for Podcast (Show) from Spotify's  search API response.
  *
  * These types model the structure returned when performing a search query with `type=show`.
  *
@@ -56,4 +56,55 @@ export interface ImageObject {
   url: string
   height: number
   width: number
+}
+
+/**
+ * Types for Episodes from Spotify's  search API response.
+ */
+
+export interface SpotifyEpisodeSearchResponse {
+  episodes: EpisodeSearchResult
+}
+
+export interface EpisodeSearchResult {
+  href: string
+  limit: number
+  next: string | null
+  offset: number
+  previous: string | null
+  total: number
+  items: EpisodeItem[]
+}
+
+export interface EpisodeItem {
+  audio_preview_url?: string | null
+  description: string
+  html_description?: string
+  duration_ms: number
+  explicit: boolean
+  external_urls: {
+    spotify: string
+  }
+  href: string
+  id: string
+  images: ImageObject[]
+  is_externally_hosted: boolean
+  is_playable: boolean
+  language: string
+  languages: string[]
+  name: string
+  release_date: string
+  release_date_precision: string // "day", "month", "year" enum?
+  resume_point: ResumePoint
+  type: string // "episode"
+  uri: string
+}
+export interface ImageObject {
+  url: string
+  height: number
+  width: number
+}
+export interface ResumePoint {
+  fully_played: boolean
+  resume_position_ms: number
 }
