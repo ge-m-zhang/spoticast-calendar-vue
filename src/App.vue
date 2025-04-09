@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SearchSection from './components/SearchSection/SearchSection.vue'
+import SearchSection from './components/search-section/SearchSection.vue'
 </script>
 
 <template>
@@ -28,19 +28,28 @@ header {
 main {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  height: calc(90vh - 130px);
+
+  align-items: stretch;
 }
 
 /* Sections */
 .search {
   background-color: #ecf3ed;
   padding: 1rem;
+  flex: 1;
+  height: 110%;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 .calendar {
   background-color: #f0f7fc;
   padding: 1rem;
+  flex: 1;
+  height: 110%;
 }
 
 /* Responsive */
@@ -48,14 +57,6 @@ main {
   main {
     flex-direction: row;
     align-items: flex-start;
-  }
-
-  .search {
-    flex: 1;
-  }
-
-  .calendar {
-    flex: 1;
   }
 }
 </style>
