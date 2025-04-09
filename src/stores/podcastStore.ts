@@ -83,7 +83,8 @@ export const usePodcastStore = defineStore('podcast', {
         this.selectedPodcastIds.length < MAX_PODCAST_SELECTIONS &&
         !this.selectedPodcastIds.includes(podcastId)
       ) {
-        this.selectedPodcastIds.push(podcastId)
+        // create a new array to ensure reliable reactivity detection, max length of 5
+        this.selectedPodcastIds = [...this.selectedPodcastIds, podcastId]
         return true
       }
       return false
