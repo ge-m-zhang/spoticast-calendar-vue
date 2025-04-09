@@ -64,6 +64,12 @@ const onToggleSelect = () => {
 
 .podcast-info {
   flex: 1;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  display: inline-block;
+  max-width: 100%;
+  margin-right: 1rem;
 }
 
 /* visual feedback more then 5 select */
