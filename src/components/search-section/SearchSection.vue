@@ -2,10 +2,10 @@
 import { computed, ref } from 'vue'
 
 import SearchBar from './SearchBar.vue'
-import { useSearchStore } from '@/stores/searchStore'
+import { usePodcastStore } from '@/stores/podcastStore'
 import PodcastList from './PodcastList.vue'
 
-const searchStore = useSearchStore()
+const searchStore = usePodcastStore()
 
 // Flag to track if a search has been initiated
 const hasSearched = ref(false)

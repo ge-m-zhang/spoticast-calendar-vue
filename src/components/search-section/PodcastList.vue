@@ -1,17 +1,18 @@
 <script setup lang="ts">
-// In PodcastList.vue script
-import { computed } from 'vue'
-import { useSearchStore } from '@/stores/searchStore'
+import { computed, watchEffect } from 'vue'
+import { usePodcastStore } from '@/stores/podcastStore'
 import PodcastItem from './PodcastItem.vue'
 
-const searchStore = useSearchStore()
+const searchStore = usePodcastStore()
 const podcasts = computed(() => searchStore.podcasts)
 const selectedPodcastIds = computed(() => searchStore.selectedPodcastIds)
 const maxSelectionsReached = computed(() => searchStore.maxSelectionsReached)
 
-// test ----
+// test ---- temp!!
 
-console.log('selectedPodcastIds', searchStore.selectedPodcastIds)
+watchEffect(() => {
+  console.log('Current selectedPodcastIds:', [...selectedPodcastIds.value])
+})
 
 const toggleSelect = (podcastId: string) => {
   searchStore.togglePodcastSelection(podcastId)

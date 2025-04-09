@@ -3,7 +3,7 @@ import { searchPodcasts } from '@/api/spotify'
 import type { ShowItem } from '@/types/Spotify.type'
 import type { Podcast } from '@/types/app.type'
 
-interface SearchState {
+interface PodcastState {
   query: string
   results: ShowItem[]
   podcasts: Podcast[]
@@ -12,14 +12,16 @@ interface SearchState {
   error: string | null
 }
 
+const MAX_PODCAST_SELECTIONS = 5
+
 /**
  * Pinia store for managing podcast search state and actions.
  *
  * Handles the search query, loading status, error state,
  * and stores results returned from Spotify's search endpoint.
  */
-export const useSearchStore = defineStore('search', {
-  state: (): SearchState => ({
+export const usePodcastStore = defineStore('podcast', {
+  state: (): PodcastState => ({
     query: '',
     results: [],
     podcasts: [],
@@ -77,7 +79,10 @@ export const useSearchStore = defineStore('search', {
      * @param podcastId - ID of the podcast to select
      */
     selectPodcast(podcastId: string) {
-      if (this.selectedPodcastIds.length < 5 && !this.selectedPodcastIds.includes(podcastId)) {
+      if (
+        this.selectedPodcastIds.length < MAX_PODCAST_SELECTIONS &&
+        !this.selectedPodcastIds.includes(podcastId)
+      ) {
         this.selectedPodcastIds.push(podcastId)
         return true
       }
