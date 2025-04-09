@@ -87,7 +87,7 @@ export interface EpisodeItem {
   }
   href: string
   id: string
-  images: ImageObject[]
+  images: ImageObject[] // shared with ShowItem
   is_externally_hosted: boolean
   is_playable: boolean
   language: string
@@ -99,11 +99,7 @@ export interface EpisodeItem {
   type: string // "episode"
   uri: string
 }
-export interface ImageObject {
-  url: string
-  height: number
-  width: number
-}
+
 export interface ResumePoint {
   fully_played: boolean
   resume_position_ms: number
