@@ -1,38 +1,61 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import SearchSection from './components/SearchSection/SearchSection.vue'
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
+  <div id="app">
+    <header>
+      <h1>Spoticast Calendar</h1>
+    </header>
 
-    <div class="wrapper">
-      <HelloWorld msg="Spoticast Calendar" />
-    </div>
-  </header>
-
-  <main></main>
+    <main>
+      <div class="search"><SearchSection /></div>
+      <div class="calendar">Calendar Section</div>
+    </main>
+  </div>
 </template>
 
 <style scoped>
 header {
-  line-height: 1.5;
+  background-color: var(--color-background-soft);
+  text-align: center;
+  padding: 1.5rem;
+  font-size: 12px;
+  font-weight: bold;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+/* Layout container */
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
 }
 
+/* Sections */
+.search {
+  background-color: #ecf3ed;
+  padding: 1rem;
+}
+
+.calendar {
+  background-color: #f0f7fc;
+  padding: 1rem;
+}
+
+/* Responsive */
 @media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+  main {
+    flex-direction: row;
+    align-items: flex-start;
   }
 
-  .logo {
-    margin: 0 2rem 0 0;
+  .search {
+    flex: 1;
+  }
+
+  .calendar {
+    flex: 1;
   }
 }
 </style>
