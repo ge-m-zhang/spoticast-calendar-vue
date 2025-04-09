@@ -15,6 +15,9 @@ const hasSearched = ref(false)
  */
 const handleSearch = (query: string): void => {
   hasSearched.value = true
+
+  // Clear previous selections before performing a new search
+  searchStore.selectedPodcastIds = []
   searchStore.performSearch(query)
 }
 
