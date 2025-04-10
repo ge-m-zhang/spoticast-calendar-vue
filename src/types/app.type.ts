@@ -18,19 +18,28 @@ export interface Episode {
   description?: string
   releaseDate: string
   releaseDatePrecision: string
-  durationMs?: number
+  duration?: number
   audioUrl?: string // audio_preview_url
   uri?: string
 }
 
 export interface CalendarEvent {
+  id: string
   title: string
-  start: Date | string
-  end?: Date | string
-  backgroundColor?: string
-  extendedProps?: {
+  start: string | Date
+  backgroundColor: string
+  borderColor: string
+  extendedProps: {
     podcastId: string
-    episodeId: string
-    [key: string]: unknown
+    podcastName: string
+    description?: string
+    duration?: number
+    audioUrl?: string
   }
+}
+
+export interface EpisodeDisplay extends Episode {
+  color?: string
+  backgroundColor?: string
+  textColor?: string
 }

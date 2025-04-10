@@ -105,7 +105,7 @@ export const useEpisodeStore = defineStore('episode', {
         description: item.description,
         releaseDate: item.release_date,
         releaseDatePrecision: item.release_date_precision,
-        durationMs: item.duration_ms,
+        duration: item.duration_ms,
         audioUrl: item.audio_preview_url || undefined,
         uri: item.uri,
       }
