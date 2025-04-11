@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CalendarSection from './components/calendar-section/CalendarSection.vue'
 import SearchSection from './components/search-section/SearchSection.vue'
 </script>
 
@@ -10,7 +11,7 @@ import SearchSection from './components/search-section/SearchSection.vue'
 
     <main>
       <div class="search"><SearchSection /></div>
-      <div class="calendar">Calendar Section</div>
+      <div class="calendar"><CalendarSection /></div>
     </main>
   </div>
 </template>
@@ -19,7 +20,7 @@ import SearchSection from './components/search-section/SearchSection.vue'
 header {
   background-color: var(--color-background-soft);
   text-align: center;
-  padding: 1.5rem;
+  padding: 1rem;
   font-size: 12px;
   font-weight: bold;
 }
@@ -36,20 +37,25 @@ main {
 }
 
 /* Sections */
+
+.search,
+.calendar {
+  padding: 20px;
+  overflow: auto; /* Add individual scrollbars */
+  height: 110%; /* Full height */
+}
 .search {
+  flex: 2;
   background-color: #ecf3ed;
   padding: 1rem;
-  flex: 1;
-  height: 110%;
+
   flex-direction: column;
-  overflow-y: auto;
 }
 
 .calendar {
+  flex: 3;
   background-color: #f0f7fc;
   padding: 1rem;
-  flex: 1;
-  height: 110%;
 }
 
 /* Responsive */
