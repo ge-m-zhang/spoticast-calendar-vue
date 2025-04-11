@@ -13,7 +13,6 @@ const onSearch = (): void => {
 </script>
 
 <template>
-  <h3>Search for Podcasts</h3>
   <div class="search-bar">
     <input
       v-model="inputValue"
