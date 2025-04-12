@@ -125,12 +125,28 @@ export const useEpisodeStore = defineStore('episode', {
   },
 
   getters: {
-    // Get episodes for a specific date
+    /**
+     * Get episodes for a specific date.
+     *
+     * While calendarStore handles most calendar-specific logic,
+     * this getter provides direct date-based access which can be useful for:
+     * - Components that need date-filtered episodes outside the calendar context
+     * - Future features like date-specific lists or statistics
+     * - Keeping data access consistent throughout the application
+     */
     getEpisodesByDate: (state) => (date: string) => {
       return state.episodesByDate[date] || []
     },
 
-    // Get episodes for a specific podcast
+    /**
+     * Get episodes for a specific podcast.
+     *
+     * Provides podcast-specific filtering which can be valuable for:
+     * - Podcast detail pages or components
+     * - Creating podcast-specific analytics or views
+     * - Offering filtering options independent of the calendar
+     * - Supporting podcast-focused features without duplicating filtering logic
+     */
     getEpisodesByPodcast: (state) => (podcastId: string) => {
       return state.episodesByPodcast[podcastId] || []
     },
