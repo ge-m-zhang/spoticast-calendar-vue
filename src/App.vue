@@ -45,7 +45,7 @@ main {
   height: 110%; /* Full height */
 }
 .search {
-  flex: 2;
+  flex: 1;
   background-color: #ecf3ed;
   padding: 1rem;
 
@@ -53,7 +53,7 @@ main {
 }
 
 .calendar {
-  flex: 3;
+  flex: 2;
   background-color: #f0f7fc;
   padding: 1rem;
 }
