@@ -59,27 +59,26 @@ export interface ImageObject {
 }
 
 /**
- * Types for Episodes from Spotify's  search API response.
+ * Types for Episode from Spotify's API response.
+ *
+ * These types model the structure returned when fetching episodes for a specific podcast.
+ *
+ * Ref: https://developer.spotify.com/documentation/web-api/reference/get-a-shows-episodes
  */
-
-export interface SpotifyEpisodeSearchResponse {
-  episodes: EpisodeSearchResult
-}
-
-export interface EpisodeSearchResult {
+export interface SpotifyEpisodeResponse {
   href: string
   limit: number
   next: string | null
   offset: number
   previous: string | null
   total: number
-  items: EpisodeItem[]
+  items: SpotifyEpisode[]
 }
 
-export interface EpisodeItem {
-  audio_preview_url?: string | null
+export interface SpotifyEpisode {
+  audio_preview_url: string
   description: string
-  html_description?: string
+  html_description: string
   duration_ms: number
   explicit: boolean
   external_urls: {
@@ -87,20 +86,24 @@ export interface EpisodeItem {
   }
   href: string
   id: string
-  images: ImageObject[] // shared with ShowItem
+  images: SpotifyImage[]
   is_externally_hosted: boolean
   is_playable: boolean
   language: string
   languages: string[]
   name: string
   release_date: string
-  release_date_precision: string // "day", "month", "year" enum?
-  resume_point: ResumePoint
-  type: string // "episode"
+  release_date_precision: string
+  resume_point: {
+    fully_played: boolean
+    resume_position_ms: number
+  }
+  type: string
   uri: string
 }
 
-export interface ResumePoint {
-  fully_played: boolean
-  resume_position_ms: number
+export interface SpotifyImage {
+  url: string
+  height: number
+  width: number
 }

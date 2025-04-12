@@ -1,13 +1,13 @@
-import type { Episode } from '@/types/app.type'
-import type { EpisodeItem } from '@/types/Spotify.type'
 import { defineStore } from 'pinia'
 import { fetchEpisodes } from '@/api/spotify'
-import { usePodcastStore } from '@/stores/podcastStore'
+import type { SpotifyEpisode } from '@/types/Spotify.type'
+import { usePodcastStore } from './podcastStore'
+import type { Episode } from '@/types/app.type'
 
 interface EpisodeState {
   episodes: Episode[]
-  episodesByDate: Record<string, Episode[]> // Key format: 'YYYY-MM-DD'
-  episodesByPodcast: Record<string, Episode[]> // Key is podcast ID
+  episodesByDate: Record<string, Episode[]>
+  episodesByPodcast: Record<string, Episode[]>
   isLoading: boolean
   error: string | null
 }
@@ -40,10 +40,10 @@ export const useEpisodeStore = defineStore('episode', {
       this.error = null
 
       try {
-        const episodeItems = await fetchEpisodes(podcastId)
-
-        const transformedEpisodes = episodeItems.map((item) =>
-          this.transformToEpisode(item, podcastId, podcastName),
+        // Use the updated fetchEpisodes function that returns SpotifyEpisode[]
+        const spotifyEpisodes = await fetchEpisodes(podcastId)
+        const transformedEpisodes = spotifyEpisodes.map((episode) =>
+          this.transformToEpisode(episode, podcastId, podcastName),
         )
 
         // Add to main episodes array
@@ -76,8 +76,8 @@ export const useEpisodeStore = defineStore('episode', {
      * This method will clear existing episodes before fetching new ones.
      */
     async fetchEpisodesForSelectedPodcasts(): Promise<void> {
-      const searchStore = usePodcastStore()
-      const selectedPodcasts = searchStore.selectedPodcasts
+      const podcastStore = usePodcastStore()
+      const selectedPodcasts = podcastStore.selectedPodcasts
 
       // Clear existing episodes if needed
       this.clearEpisodes()
@@ -96,18 +96,24 @@ export const useEpisodeStore = defineStore('episode', {
     },
 
     // Transform Spotify API response to app's Episode type
-    transformToEpisode(item: EpisodeItem, podcastId: string, podcastName: string): Episode {
+    transformToEpisode(episode: SpotifyEpisode, podcastId: string, podcastName: string): Episode {
       return {
-        id: item.id,
+        id: episode.id,
         podcastId: podcastId,
         podcastName: podcastName,
-        name: item.name,
-        description: item.description,
-        releaseDate: item.release_date,
-        releaseDatePrecision: item.release_date_precision,
-        durationMs: item.duration_ms,
-        audioUrl: item.audio_preview_url || undefined,
-        uri: item.uri,
+        name: episode.name,
+        description: episode.description,
+        htmlDescription: episode.html_description,
+        releaseDate: episode.release_date,
+        releaseDatePrecision: episode.release_date_precision,
+        duration: episode.duration_ms,
+        audioUrl: episode.audio_preview_url || undefined,
+        uri: episode.uri,
+        images: episode.images.map((img) => ({
+          url: img.url,
+          height: img.height,
+          width: img.width,
+        })),
       }
     },
 
@@ -119,12 +125,28 @@ export const useEpisodeStore = defineStore('episode', {
   },
 
   getters: {
-    // Get episodes for a specific date
+    /**
+     * Get episodes for a specific date.
+     *
+     * While calendarStore handles most calendar-specific logic,
+     * this getter provides direct date-based access which can be useful for:
+     * - Components that need date-filtered episodes outside the calendar context
+     * - Future features like date-specific lists or statistics
+     * - Keeping data access consistent throughout the application
+     */
     getEpisodesByDate: (state) => (date: string) => {
       return state.episodesByDate[date] || []
     },
 
-    // Get episodes for a specific podcast
+    /**
+     * Get episodes for a specific podcast.
+     *
+     * Provides podcast-specific filtering which can be valuable for:
+     * - Podcast detail pages or components
+     * - Creating podcast-specific analytics or views
+     * - Offering filtering options independent of the calendar
+     * - Supporting podcast-focused features without duplicating filtering logic
+     */
     getEpisodesByPodcast: (state) => (podcastId: string) => {
       return state.episodesByPodcast[podcastId] || []
     },

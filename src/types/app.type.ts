@@ -9,28 +9,39 @@ export interface Podcast {
   uri?: string
   totalEpisodes: number
 }
-
+// Define the Episode type used within the application
 export interface Episode {
   id: string
   podcastId: string
   podcastName: string
   name: string
-  description?: string
+  description: string
+  htmlDescription: string
   releaseDate: string
   releaseDatePrecision: string
-  durationMs?: number
-  audioUrl?: string // audio_preview_url
-  uri?: string
+  duration: number
+  audioUrl?: string
+  uri: string
+  images: {
+    url: string
+    height: number
+    width: number
+  }[]
 }
 
 export interface CalendarEvent {
+  id: string
   title: string
-  start: Date | string
-  end?: Date | string
-  backgroundColor?: string
-  extendedProps?: {
+  start: Date
+  extendedProps: {
+    episode: Episode
+    podcastName: string
     podcastId: string
-    episodeId: string
-    [key: string]: unknown
   }
+  backgroundColor?: string
+  borderColor?: string
+  textColor?: string
 }
+
+// Calendar view types
+export type CalendarViewType = 'month' | 'week'

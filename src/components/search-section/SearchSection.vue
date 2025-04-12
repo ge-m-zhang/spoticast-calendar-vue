@@ -29,6 +29,7 @@ const noResultsFound = computed(
 
 <template>
   <div class="search-section">
+    <h3>Search for Podcasts</h3>
     <SearchBar @onSearch="handleSearch" />
 
     <div v-if="searchStore.isLoading" class="loading-indicator">Searching...</div>
@@ -44,7 +45,8 @@ const noResultsFound = computed(
 .search-section {
   width: 100%;
   height: 100%;
-  padding: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
   margin-bottom: 2rem;
 
   box-sizing: border-box;

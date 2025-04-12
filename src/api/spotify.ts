@@ -1,9 +1,9 @@
 import axios from 'axios'
 import { getAccessToken } from '@/auth/getAccessToken'
 import type {
-  EpisodeItem,
   ShowItem,
-  SpotifyEpisodeSearchResponse,
+  SpotifyEpisode,
+  SpotifyEpisodeResponse,
   SpotifyShowSearchResponse,
 } from '@/types/Spotify.type'
 
@@ -51,34 +51,29 @@ export const searchPodcasts = async (query: string): Promise<ShowItem[]> => {
 /**
  * Fetches episodes for a given podcast ID from Spotify.
  *
+ * https://developer.spotify.com/documentation/web-api/reference/get-a-shows-episodes
  * @param {string} podcastId - The Spotify ID of the podcast
- * @returns {Promise<EpisodeItem[]>} A promise that resolves to an array of episode items
+ * @returns {Promise<SpotifyEpisode[]>} A promise that resolves to an array of Spotify episodes
  * @throws {Error} If the fetch fails or returns unexpected data
  */
-export const fetchEpisodes = async (podcastId: string): Promise<EpisodeItem[]> => {
-  const resultLimit = 50 // can be more as calendar changes
+export const fetchEpisodes = async (podcastId: string): Promise<SpotifyEpisode[]> => {
+  const resultLimit = 50
   try {
     const token = await getAccessToken()
-    const encodedQuery = encodeURIComponent(podcastId)
-    const endpoint = `https://api.spotify.com/v1/search?q=${encodedQuery}&type=episode&limit=${resultLimit}`
+    const endpoint = `https://api.spotify.com/v1/shows/${podcastId}/episodes?limit=${resultLimit}`
 
-    const response = await axios.get<SpotifyEpisodeSearchResponse>(endpoint, {
+    const response = await axios.get<SpotifyEpisodeResponse>(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
 
-    if (response.data?.episodes?.items) {
-      console.log(
-        `Spotify episodes API response for query "${podcastId}":`,
-        response.data.episodes.items,
-      )
-      return response.data.episodes.items
-    } else {
-      throw new Error('Spotify episodes response is missing expected episode items')
-    }
+    console.log(`Spotify episodes API response for podcast "${podcastId}":`, response.data.items)
+
+    // Return the raw episodes from Spotify
+    return response.data.items
   } catch (error) {
-    console.error(`Spotify episodes API failed for query "${podcastId}":`, error)
-    throw new Error('Unable to search episodes on Spotify.')
+    console.error(`Spotify episodes API failed for podcast "${podcastId}":`, error)
+    throw new Error('Unable to fetch episodes from Spotify.')
   }
 }

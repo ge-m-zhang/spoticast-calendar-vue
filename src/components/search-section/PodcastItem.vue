@@ -53,8 +53,14 @@ const onToggleSelect = () => {
   margin-bottom: 1rem;
   border: 1px solid #ccc;
   padding: 1rem;
+  background-color: #ffffff; /* Light gray background */
+  border-radius: 8px; /* Rounded corners */
+  transition: background-color 0.2s ease; /* Smooth hover effect */
 }
 
+.podcast-item:hover {
+  background-color: #f0f0f0; /* Slightly darker on hover */
+}
 .podcast-image {
   width: 80px;
   height: 80px;
