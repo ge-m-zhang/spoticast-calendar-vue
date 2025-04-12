@@ -17,15 +17,20 @@ import FullCalendar from '@fullcalendar/vue3'
 import EpisodeModal from '@/components/calendar-section/EpisodeModal.vue'
 import { useEpisodeStore } from '@/stores/episodeStore'
 import { usePodcastStore } from '@/stores/podcastStore'
-import { mapEpisodesToEvents } from '@/utils/calendarUtils'
+import { useCalendarStore } from '@/stores/calendarStore'
 import { getCalendarOptions } from '@/configs/fullcalendar.config'
-import type { EventClickArg } from '@fullcalendar/core'
+import type { EventClickArg, EventContentArg } from '@fullcalendar/core'
 import type { Episode } from '@/types/app.type'
 
 const episodeStore = useEpisodeStore()
 const podcastStore = usePodcastStore()
+const calendarStore = useCalendarStore()
+
+// Local component state
 const showEpisodeModal = ref(false)
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
+
+// Selected episode for the modal
 const selectedEpisode = ref<Episode>({
   id: '',
   name: '',
@@ -34,23 +39,24 @@ const selectedEpisode = ref<Episode>({
   podcastId: '',
   podcastName: '',
   description: '',
+  htmlDescription: '',
   duration: 0,
   audioUrl: '',
+  uri: '',
+  images: [],
 })
 
+// Get selected podcasts from the podcast store
 const selectedPodcasts = computed(() => podcastStore.selectedPodcasts)
 
-//! Map episodes to calendar events
-const calendarEvents = computed(() =>
-  mapEpisodesToEvents(episodeStore.episodes, selectedPodcasts.value),
-)
+const calendarEvents = computed(() => calendarStore.calendarEvents)
 
+// todo - in another file
+// Handle event click to show episode details in modal
 const handleEventClick = (info: EventClickArg) => {
-  // Get the episode ID from the event
   const episodeId = info.event.id
 
-  // Find the full episode data in the store
-  const episode = episodeStore.episodes.find((ep) => ep.id === episodeId)
+  const episode = calendarStore.findEpisodeById(episodeId)
 
   if (episode) {
     selectedEpisode.value = { ...episode }
@@ -64,18 +70,52 @@ const handleEventClick = (info: EventClickArg) => {
       name: info.event.title,
       releaseDate: eventDate.toISOString(),
       releaseDatePrecision: 'day',
-      podcastId: info.event.extendedProps.podcastId,
-      podcastName: info.event.extendedProps.podcastName,
+      podcastId: info.event.extendedProps.podcastId || '',
+      podcastName: info.event.extendedProps.podcastName || '',
       description: info.event.extendedProps.description || '',
+      htmlDescription: info.event.extendedProps.htmlDescription || '',
       duration: info.event.extendedProps.duration || 0,
       audioUrl: info.event.extendedProps.audioUrl || '',
+      uri: info.event.extendedProps.uri || '',
+      images: info.event.extendedProps.images || [],
     }
   }
 
   showEpisodeModal.value = true
 }
 
-const calendarOptions = computed(() => getCalendarOptions(calendarEvents.value, handleEventClick))
+const calendarOptions = computed(() => {
+  const customOptions = {
+    initialDate:
+      episodeStore.datesWithEpisodes.length > 0 ? episodeStore.datesWithEpisodes[0] : undefined,
+
+    eventContent: (arg: EventContentArg) => {
+      const podcastName = arg.event.extendedProps.podcastName || ''
+      const episodeTitle = arg.event.title
+
+      let displayTitle = episodeTitle
+
+      const prefix = podcastName + ': '
+      if (episodeTitle.startsWith(prefix)) {
+        displayTitle = episodeTitle.substring(prefix.length)
+      }
+
+      return {
+        html: `
+      <div class="event-content">
+        <div class="episode-title">${displayTitle}</div>
+        <div class="podcast-name">${podcastName}</div>
+      </div>
+    `,
+      }
+    },
+  }
+
+  return getCalendarOptions(calendarEvents.value, handleEventClick, customOptions)
+})
+
+//TODO: When podcasts selection changes, navigate to first date with episodes if available
+// with selectedPodcasts
 </script>
 
 <style scoped>
@@ -97,12 +137,28 @@ const calendarOptions = computed(() => getCalendarOptions(calendarEvents.value, 
 
 /* Target FullCalendar elements with :deep() */
 
-/* Compact event title display */
-:deep(.fc-event-title) {
+:deep(.fc-event) {
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+/* Style for the podcast name */
+:deep(.podcast-name) {
+  font-size: 0.75em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Style for the episode title */
+:deep(.episode-title) {
+  font-weight: bold;
+  font-size: 0.85em;
   white-space: normal;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* Limit to 2 lines */
+  -webkit-line-clamp: 1; /* Limit to 1 line */
   -webkit-box-orient: vertical;
 }
 
