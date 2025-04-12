@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import FullCalendar from '@fullcalendar/vue3'
 import EpisodeModal from '@/components/calendar-section/EpisodeModal.vue'
 import { useEpisodeStore } from '@/stores/episodeStore'
@@ -114,8 +114,43 @@ const calendarOptions = computed(() => {
   return getCalendarOptions(calendarEvents.value, handleEventClick, customOptions)
 })
 
-//TODO: When podcasts selection changes, navigate to first date with episodes if available
-// with selectedPodcasts
+// Force calendar refresh when events change
+watch(
+  calendarEvents,
+  () => {
+    if (calendarRef.value) {
+      const calendarApi = calendarRef.value.getApi()
+      calendarApi.refetchEvents()
+    }
+  },
+  { deep: true },
+)
+
+// For some edge cases where the episode realse date might be in the past
+// when podcasts selection changes, navigate to most recent release date
+watch(
+  selectedPodcasts,
+  () => {
+    // Allow time for episodes to be fetched and events to update
+    setTimeout(() => {
+      if (calendarRef.value && episodeStore.datesWithEpisodes.length > 0) {
+        const calendarApi = calendarRef.value.getApi()
+
+        // Always navigate to the most recent episode when selecting any podcast
+        const sortedDates = [...episodeStore.datesWithEpisodes].sort(
+          (a, b) => new Date(a).getTime() - new Date(b).getTime(),
+        )
+
+        if (sortedDates.length > 0) {
+          // Always go to most recent episode date (last in sorted array)
+          const mostRecentDate = sortedDates[sortedDates.length - 1]
+          calendarApi.gotoDate(mostRecentDate)
+        }
+      }
+    }, 300)
+  },
+  { deep: true },
+)
 </script>
 
 <style scoped>
