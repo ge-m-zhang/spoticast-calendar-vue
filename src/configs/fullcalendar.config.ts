@@ -9,13 +9,36 @@ import type {
 } from '@fullcalendar/core'
 
 /**
- * Creates a standard event content renderer with podcast name and episode title.
+ * Creates a custom event content renderer for FullCalendar events.
  *
- * @param includeA11y Whether to include additional accessibility attributes
+ * This function returns a renderer that generates HTML content for calendar events,
+ * displaying podcast episode information in a customized block on the calendar.
+ *
+ * @param options - Configuration options for the renderer
+ * @param options.includeA11y - Whether to include accessibility attributes (default: true)
+ * @param options.removePodcastPrefix - Whether to remove the podcast name prefix from episode titles if present (default: false)
+ *
+ * @returns A function that takes an EventContentArg and returns an object with HTML content
  */
-export const createEventContentRenderer = (includeA11y = true) => {
+export const createEventContentRenderer = (
+  options: {
+    includeA11y?: boolean
+    removePodcastPrefix?: boolean
+  } = {},
+) => {
+  const { includeA11y = true, removePodcastPrefix = false } = options
+
   return (arg: EventContentArg) => {
     const podcastName = arg.event.extendedProps.podcastName || ''
+    let episodeTitle = arg.event.title
+
+    // Remove podcast name prefix if enabled and present
+    if (removePodcastPrefix) {
+      const prefix = podcastName + ': '
+      if (episodeTitle.startsWith(prefix)) {
+        episodeTitle = episodeTitle.substring(prefix.length)
+      }
+    }
 
     // Base CSS classes for styling
     const containerClass = 'event-content'
@@ -24,15 +47,15 @@ export const createEventContentRenderer = (includeA11y = true) => {
 
     // A11y attributes
     const a11yAttrs = includeA11y
-      ? `tabindex="0" aria-label="${podcastName} - ${arg.event.title}"`
+      ? `tabindex="0" aria-label="${podcastName} - ${episodeTitle}"`
       : ''
 
-    // Use the exact same structure that was working before
     return {
       html: `
         <div class="${containerClass}" ${a11yAttrs}>
-          <div class="${podcastClass}">${podcastName}</div>
-          <div class="${titleClass}">${arg.event.title}</div>
+           <div class="${titleClass}">${episodeTitle}</div>
+           <div class="${podcastClass}">${podcastName}</div>
+
         </div>
       `,
     }
@@ -67,7 +90,8 @@ export const getCalendarOptions = (
     selectable: false,
     editable: false,
     dayMaxEvents: true,
-    eventContent: createEventContentRenderer(true),
+    eventDisplay: 'block',
+    eventContent: createEventContentRenderer({ includeA11y: true }),
     eventDidMount: (info) => {
       // Basic keyboard accessibility
       info.el.setAttribute('tabindex', '0')

@@ -5,8 +5,16 @@ import { useEpisodeStore } from './episodeStore'
 import { usePodcastStore } from './podcastStore'
 import type { CalendarEvent, Episode } from '@/types/app.type'
 
+/**
+ * Pinia store for managing calendar events and actions.
+ *
+ * This store is responsible for transforming episodes into
+ * FullCalendar event format and managing the state of the calendar.
+ *
+ * Ref:
+ * https://fullcalendar.io/docs/event-object
+ */
 export const useCalendarStore = defineStore('calendar', () => {
-  // Get related stores
   const colorStore = useColorStore()
   const episodeStore = useEpisodeStore()
   const podcastStore = usePodcastStore()
@@ -16,22 +24,20 @@ export const useCalendarStore = defineStore('calendar', () => {
   const episodes = computed(() => episodeStore.episodes)
 
   /**
-   * Map episodes to FullCalendar event format with proper date handling
+   * Map episodes to FullCalendar event format with Date objects
    */
   const calendarEvents = computed((): CalendarEvent[] => {
     if (!episodes.value || !selectedPodcasts.value || selectedPodcasts.value.length === 0) {
       return []
     }
 
-    // Get currently selected podcast IDs
     const currentlySelectedIds = new Set(selectedPodcasts.value.map((podcast) => podcast.id))
 
     // Update color assignments based on currently selected podcasts
     colorStore.updateColorAssignments(currentlySelectedIds)
 
-    // Ensure new podcasts have colors assigned
+    // Ensure all selected podcasts have a color assigned
     selectedPodcasts.value.forEach((podcast) => {
-      // Just accessing the color will assign it if needed
       colorStore.getPodcastColor(podcast.id)
     })
 
@@ -40,36 +46,20 @@ export const useCalendarStore = defineStore('calendar', () => {
       currentlySelectedIds.has(episode.podcastId),
     )
 
-    // Important: Properly normalize dates for accurate calendar display
     return filteredEpisodes.map((episode) => {
       const color = colorStore.getPodcastColor(episode.podcastId)
 
-      // Parse the release date
-      const releaseDate = new Date(episode.releaseDate)
-
-      // Reset time part to ensure it shows on the correct day
-      // ! critical - midnight in user's local timezone
-      // for proper day-based display
-      const normalizedDate = new Date(
-        releaseDate.getFullYear(),
-        releaseDate.getMonth(),
-        releaseDate.getDate(),
-      )
-
-      // Determine if it's an all-day event based on release_date_precision
-      const isAllDay = episode.releaseDatePrecision === 'day'
-
+      const startDate = new Date(episode.releaseDate)
       return {
         id: episode.id,
         title: `${episode.podcastName}: ${episode.name}`,
-        start: isAllDay ? normalizedDate.toISOString().split('T')[0] : normalizedDate.toISOString(),
-        allDay: isAllDay,
+        start: startDate,
         backgroundColor: color,
         borderColor: color,
-        textColor: '#ffffff', // White text for better contrast
         extendedProps: {
           episode: episode,
           podcastName: episode.podcastName,
+          podcastId: episode.podcastId,
         },
       }
     })

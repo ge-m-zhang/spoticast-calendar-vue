@@ -18,8 +18,8 @@ import EpisodeModal from '@/components/calendar-section/EpisodeModal.vue'
 import { useEpisodeStore } from '@/stores/episodeStore'
 import { usePodcastStore } from '@/stores/podcastStore'
 import { useCalendarStore } from '@/stores/calendarStore'
-import { getCalendarOptions } from '@/configs/fullcalendar.config'
-import type { EventClickArg, EventContentArg } from '@fullcalendar/core'
+import { createEventContentRenderer, getCalendarOptions } from '@/configs/fullcalendar.config'
+import type { EventClickArg } from '@fullcalendar/core'
 import type { Episode } from '@/types/app.type'
 
 const episodeStore = useEpisodeStore()
@@ -84,31 +84,20 @@ const handleEventClick = (info: EventClickArg) => {
   showEpisodeModal.value = true
 }
 
+/**
+ * Creates reactive calendar configuration that updates when episodes or selected podcasts change.
+ * Sets initial date to first available episode date and customizes event display
+ * with accessibility support and podcast prefix removal.
+ */
 const calendarOptions = computed(() => {
   const customOptions = {
     initialDate:
       episodeStore.datesWithEpisodes.length > 0 ? episodeStore.datesWithEpisodes[0] : undefined,
 
-    eventContent: (arg: EventContentArg) => {
-      const podcastName = arg.event.extendedProps.podcastName || ''
-      const episodeTitle = arg.event.title
-
-      let displayTitle = episodeTitle
-
-      const prefix = podcastName + ': '
-      if (episodeTitle.startsWith(prefix)) {
-        displayTitle = episodeTitle.substring(prefix.length)
-      }
-
-      return {
-        html: `
-      <div class="event-content">
-        <div class="episode-title">${displayTitle}</div>
-        <div class="podcast-name">${podcastName}</div>
-      </div>
-    `,
-      }
-    },
+    eventContent: createEventContentRenderer({
+      includeA11y: true,
+      removePodcastPrefix: true,
+    }),
   }
 
   return getCalendarOptions(calendarEvents.value, handleEventClick, customOptions)
@@ -180,7 +169,7 @@ watch(
 
 /* Style for the podcast name */
 :deep(.podcast-name) {
-  font-size: 0.75em;
+  font-size: 0.6em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -189,7 +178,7 @@ watch(
 /* Style for the episode title */
 :deep(.episode-title) {
   font-weight: bold;
-  font-size: 0.85em;
+  font-size: 0.9em;
   white-space: normal;
   overflow: hidden;
   display: -webkit-box;

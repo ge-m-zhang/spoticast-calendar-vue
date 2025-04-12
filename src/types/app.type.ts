@@ -29,16 +29,14 @@ export interface Episode {
   }[]
 }
 
-// Calendar event type (typically used with FullCalendar)
 export interface CalendarEvent {
   id: string
   title: string
-  start: string
-  end?: string
-  allDay: boolean
+  start: Date
   extendedProps: {
     episode: Episode
     podcastName: string
+    podcastId: string
   }
   backgroundColor?: string
   borderColor?: string
