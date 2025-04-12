@@ -9,37 +9,41 @@ export interface Podcast {
   uri?: string
   totalEpisodes: number
 }
-
+// Define the Episode type used within the application
 export interface Episode {
   id: string
   podcastId: string
   podcastName: string
   name: string
-  description?: string
+  description: string
+  htmlDescription: string
   releaseDate: string
   releaseDatePrecision: string
-  duration?: number
-  audioUrl?: string // audio_preview_url
-  uri?: string
+  duration: number
+  audioUrl?: string
+  uri: string
+  images: {
+    url: string
+    height: number
+    width: number
+  }[]
 }
 
+// Calendar event type (typically used with FullCalendar)
 export interface CalendarEvent {
   id: string
   title: string
-  start: string | Date
-  backgroundColor: string
-  borderColor: string
+  start: string
+  end?: string
+  allDay: boolean
   extendedProps: {
-    podcastId: string
+    episode: Episode
     podcastName: string
-    description?: string
-    duration?: number
-    audioUrl?: string
   }
-}
-
-export interface EpisodeDisplay extends Episode {
-  color?: string
   backgroundColor?: string
+  borderColor?: string
   textColor?: string
 }
+
+// Calendar view types
+export type CalendarViewType = 'month' | 'week'
