@@ -1,16 +1,13 @@
 <template>
   <div class="calendar-header">
     <h3>Podcast Episode Calendar</h3>
-
     <div class="header-content">
       <div class="podcast-stats">
-        <span v-if="isLoading"> Loading episodes... </span>
-
-        <span v-if="selectedPodcasts.length > 0 && !isLoading">
-          Showing episodes from
-          {{ selectedPodcasts.length }} podcast(s)
+        <span v-if="isLoading">Loading episodes...</span>
+        <span v-else-if="selectedPodcasts.length > 0">
+          Showing episodes from {{ selectedPodcasts.length }} podcast(s)
         </span>
-        <span v-if="selectedPodcasts.length === 0">No podcasts selected</span>
+        <span v-else>No podcasts selected</span>
       </div>
     </div>
   </div>
@@ -23,11 +20,10 @@ import { useEpisodeStore } from '@/stores/episodeStore'
 
 const podcastStore = usePodcastStore()
 const episodeStore = useEpisodeStore()
+
 const selectedPodcasts = computed(() => podcastStore.selectedPodcasts)
 
-// Determine loading state
 const isLoading = computed(() => {
-  // If episodes are loading or if podcasts are selected but no episodes loaded yet
   return (
     episodeStore.isLoading ||
     (podcastStore.selectedPodcasts.length > 0 && episodeStore.episodes.length === 0)
