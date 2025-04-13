@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { focusBackToSearch } from '@/utils/keyboardNavigation.util'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const emits = defineEmits(['onSearch'])
 const inputValue = ref('')
@@ -32,6 +32,12 @@ const handleKeyDown = (e: KeyboardEvent): void => {
 // Set up global keyboard listeners
 onMounted(() => {
   document.addEventListener('keydown', handleKeyDown)
+
+  //!* removing the global 'keydown' event listener
+  // when the component is unmounted to avoid potential memory leaks
+  onUnmounted(() => {
+    document.removeEventListener('keydown', handleKeyDown)
+  })
 })
 </script>
 
