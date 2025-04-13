@@ -46,9 +46,7 @@ export const createEventContentRenderer = (
     const titleClass = 'episode-title'
 
     // A11y attributes
-    const a11yAttrs = includeA11y
-      ? `tabindex="0" aria-label="${podcastName} - ${episodeTitle}"`
-      : ''
+    const a11yAttrs = includeA11y ? ` aria-label="${podcastName} - ${episodeTitle}"` : ''
 
     return {
       html: `
@@ -86,19 +84,25 @@ export const getCalendarOptions = (
     eventClick: eventClickHandler,
     firstDay: 0,
     height: 'auto',
-    navLinks: true,
+    navLinks: false, //
     selectable: false,
     editable: false,
     dayMaxEvents: true,
     eventDisplay: 'block',
     eventContent: createEventContentRenderer({ includeA11y: true }),
     eventDidMount: (info) => {
-      // Basic keyboard accessibility
+      // Enhanced keyboard accessibility
       info.el.setAttribute('tabindex', '0')
       info.el.setAttribute('role', 'button')
 
+      // Add attributes to help with keyboard navigation
+      info.el.setAttribute('data-event-id', info.event.id)
+      info.el.setAttribute('data-date', info.event.start?.toISOString().split('T')[0] || '')
+
       info.el.addEventListener('keydown', (e) => {
+        // Handle Enter/Space for selection
         if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
           const clickArg: EventClickArg = {
             el: info.el,
             event: info.event,
@@ -110,6 +114,5 @@ export const getCalendarOptions = (
       })
     },
   }
-
   return { ...defaultOptions, ...customOptions }
 }

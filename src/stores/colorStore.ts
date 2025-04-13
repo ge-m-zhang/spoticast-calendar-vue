@@ -1,15 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-// Define distinct colors for podcasts
+// Contrast Checker
+// https://webaim.org/resources/contrastchecker/
 const DISTINCT_COLORS = [
-  '#3788C8' /* Blue Steel */,
-  '#53B568' /* Forest Green */,
-  '#E17B58' /* Terracotta */,
-  '#8B62AA' /* Amethyst */,
-  '#E6B33D' /* Amber Gold */,
-  '#5BBFBD' /* Teal */,
-  '#D25C7F' /* Raspberry */,
+  '#0B4B30' /* Dark Forest Green */,
+  '#0054A3' /* Dark Blue */,
+  '#392083' /* Deep Purple 800 */,
+  '#5F3800' /*Dark Amber Gold */,
+  '#A20769' /* Dark Raspberry */,
 ]
 
 export const useColorStore = defineStore('color', () => {

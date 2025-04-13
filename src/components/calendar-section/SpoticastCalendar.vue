@@ -1,36 +1,41 @@
 <template>
-  <div class="spoticast-calendar">
-    <div class="calendar-container">
-      <FullCalendar ref="calendarRef" :options="calendarOptions" />
-    </div>
+  <div
+    class="spoticast-calendar"
+    ref="calendarRef"
+    role="application"
+    aria-label="Podcast episodes calendar"
+  >
+    <FullCalendar ref="fullCalendarRef" :options="calendarOptions" />
+
     <EpisodeModal
       v-if="showEpisodeModal"
       :episode="selectedEpisode"
-      @close="showEpisodeModal = false"
+      @close="closeModal"
+      @keydown.esc="closeModal"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import FullCalendar from '@fullcalendar/vue3'
 import EpisodeModal from '@/components/calendar-section/EpisodeModal.vue'
 import { useEpisodeStore } from '@/stores/episodeStore'
 import { usePodcastStore } from '@/stores/podcastStore'
 import { useCalendarStore } from '@/stores/calendarStore'
 import { createEventContentRenderer, getCalendarOptions } from '@/configs/fullcalendar.config'
-import type { EventClickArg } from '@fullcalendar/core'
+import { useCalendarKeyboardNavigation } from '@/utils/calendarKeyboardNavigation'
+
 import type { Episode } from '@/types/app.type'
 
 const episodeStore = useEpisodeStore()
 const podcastStore = usePodcastStore()
 const calendarStore = useCalendarStore()
 
-// Local component state
+const calendarRef = ref<HTMLElement | null>(null)
+const fullCalendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
 const showEpisodeModal = ref(false)
-const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
 
-// Selected episode for the modal
 const selectedEpisode = ref<Episode>({
   id: '',
   name: '',
@@ -46,49 +51,23 @@ const selectedEpisode = ref<Episode>({
   images: [],
 })
 
-// Get selected podcasts from the podcast store
 const selectedPodcasts = computed(() => podcastStore.selectedPodcasts)
-
 const calendarEvents = computed(() => calendarStore.calendarEvents)
 
-// todo - in another file
-// Handle event click to show episode details in modal
-const handleEventClick = (info: EventClickArg) => {
-  const episodeId = info.event.id
+// Initialize the keyboard navigation utility with direct access to the stores and refs
+const { handleEventClick, makeEventsFocusable, closeModal } = useCalendarKeyboardNavigation(
+  calendarStore,
+  selectedEpisode,
+  showEpisodeModal,
+)
 
-  const episode = calendarStore.findEpisodeById(episodeId)
-
-  if (episode) {
-    selectedEpisode.value = { ...episode }
-  } else {
-    // Fallback to event data if episode not found in store
-    const eventDate =
-      info.event.start instanceof Date ? info.event.start : new Date(info.event.start || '')
-
-    selectedEpisode.value = {
-      id: info.event.id,
-      name: info.event.title,
-      releaseDate: eventDate.toISOString(),
-      releaseDatePrecision: 'day',
-      podcastId: info.event.extendedProps.podcastId || '',
-      podcastName: info.event.extendedProps.podcastName || '',
-      description: info.event.extendedProps.description || '',
-      htmlDescription: info.event.extendedProps.htmlDescription || '',
-      duration: info.event.extendedProps.duration || 0,
-      audioUrl: info.event.extendedProps.audioUrl || '',
-      uri: info.event.extendedProps.uri || '',
-      images: info.event.extendedProps.images || [],
-    }
+// Handle escape key globally for the modal
+const handleEscKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && showEpisodeModal.value) {
+    closeModal()
   }
-
-  showEpisodeModal.value = true
 }
 
-/**
- * Creates reactive calendar configuration that updates when episodes or selected podcasts change.
- * Sets initial date to first available episode date and customizes event display
- * with accessibility support and podcast prefix removal.
- */
 const calendarOptions = computed(() => {
   const customOptions = {
     initialDate:
@@ -98,18 +77,37 @@ const calendarOptions = computed(() => {
       includeA11y: true,
       removePodcastPrefix: true,
     }),
+
+    eventsSet: () => {
+      setTimeout(makeEventsFocusable, 100)
+    },
+
+    viewDidMount: () => {
+      setTimeout(makeEventsFocusable, 100)
+    },
+
+    // Use the event click handler from our utility
+    eventClick: handleEventClick,
   }
 
   return getCalendarOptions(calendarEvents.value, handleEventClick, customOptions)
 })
 
-// Force calendar refresh when events change
+onMounted(() => {
+  // Add global escape key handler
+  document.addEventListener('keydown', handleEscKey)
+
+  // Initial focus setup
+  setTimeout(makeEventsFocusable, 100)
+})
+
 watch(
   calendarEvents,
   () => {
-    if (calendarRef.value) {
-      const calendarApi = calendarRef.value.getApi()
+    if (fullCalendarRef.value) {
+      const calendarApi = fullCalendarRef.value.getApi()
       calendarApi.refetchEvents()
+      setTimeout(makeEventsFocusable, 100)
     }
   },
   { deep: true },
@@ -120,20 +118,18 @@ watch(
 watch(
   selectedPodcasts,
   () => {
-    // Allow time for episodes to be fetched and events to update
     setTimeout(() => {
-      if (calendarRef.value && episodeStore.datesWithEpisodes.length > 0) {
-        const calendarApi = calendarRef.value.getApi()
+      if (fullCalendarRef.value && episodeStore.datesWithEpisodes.length > 0) {
+        const calendarApi = fullCalendarRef.value.getApi()
 
-        // Always navigate to the most recent episode when selecting any podcast
         const sortedDates = [...episodeStore.datesWithEpisodes].sort(
           (a, b) => new Date(a).getTime() - new Date(b).getTime(),
         )
 
         if (sortedDates.length > 0) {
-          // Always go to most recent episode date (last in sorted array)
           const mostRecentDate = sortedDates[sortedDates.length - 1]
           calendarApi.gotoDate(mostRecentDate)
+          setTimeout(makeEventsFocusable, 100)
         }
       }
     }, 300)
@@ -165,6 +161,11 @@ watch(
   cursor: pointer;
   padding: 2px;
   border-radius: 4px;
+}
+
+:deep(.fc-event:focus) {
+  outline: 2px solid #ffab00; /* Your preferred focus outline color */
+  background-color: #ffffff; /* Optionally update the background */
 }
 
 /* Style for the podcast name */

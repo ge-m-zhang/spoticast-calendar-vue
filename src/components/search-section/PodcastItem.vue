@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Podcast } from '@/types/app.type'
+import { focusBackToSearch } from '@/utils/keyboardNavigation.util'
 
 const props = defineProps<{
   podcast: Podcast
@@ -12,36 +13,45 @@ const emit = defineEmits<{
 }>()
 
 const onToggleSelect = () => {
-  emit('toggleSelect', props.podcast.id)
+  if (!props.selectionDisabled) {
+    emit('toggleSelect', props.podcast.id)
+  }
+}
+
+// only having Enter for toggle selection, Space for default browser behavior - scroll down
+const onKeyDown = (event: KeyboardEvent): void => {
+  if (event.key === 'Enter' && !props.selectionDisabled) {
+    event.preventDefault()
+    onToggleSelect()
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    focusBackToSearch()
+  }
 }
 </script>
 
 <template>
-  <div class="podcast-item">
-    <img :src="podcast.imageUrl" alt="" class="podcast-image" />
+  <div
+    class="podcast-item"
+    :class="{
+      'is-selected': isSelected,
+      'disabled-selection': selectionDisabled,
+    }"
+    @click="onToggleSelect"
+    @keydown="onKeyDown"
+    tabindex="0"
+    role="button"
+    :aria-pressed="isSelected"
+    :aria-label="`Select ${podcast.name} for calendar${isSelected ? ' (currently selected)' : ''}`"
+  >
+    <img :src="podcast.imageUrl" :alt="`Cover image for ${podcast.name}`" class="podcast-image" />
     <div class="podcast-info">
-      <h3>
-        <a
-          :href="podcast.uri ? `https://open.spotify.com/show/${podcast.uri.split(':')[2]}` : '#'"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="podcast-link"
-        >
-          {{ podcast.name }}
-        </a>
-      </h3>
-      <!-- <p>{{ podcast.description }}</p> -->
+      <h3 class="podcast-name">{{ podcast.name }}</h3>
       <div class="podcast-meta">Publisher: {{ podcast.publisher }}</div>
       <div class="podcast-meta">Total Episodes: {{ podcast.totalEpisodes }}</div>
     </div>
-    <div class="checkbox-container" :class="{ 'disabled-selection': selectionDisabled }">
-      <input
-        type="checkbox"
-        :checked="isSelected"
-        :disabled="selectionDisabled"
-        @change="onToggleSelect"
-      />
-      <span v-if="selectionDisabled" class="tooltip">Maximum of 5 podcasts can be selected</span>
+    <div v-if="selectionDisabled" class="tooltip-container">
+      <span class="tooltip" role="tooltip"> Maximum of 5 podcasts can be selected </span>
     </div>
   </div>
 </template>
@@ -53,14 +63,31 @@ const onToggleSelect = () => {
   margin-bottom: 1rem;
   border: 1px solid #ccc;
   padding: 1rem;
-  background-color: #ffffff; /* Light gray background */
-  border-radius: 8px; /* Rounded corners */
-  transition: background-color 0.2s ease; /* Smooth hover effect */
+  background-color: #ffffff;
+  border-radius: 8px;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  outline: none;
 }
 
-.podcast-item:hover {
-  background-color: #f0f0f0; /* Slightly darker on hover */
+.podcast-item:hover:not(.disabled-selection) {
+  background-color: #f0f0f0;
 }
+
+.podcast-item:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.is-selected {
+  background-color: #f8f9fa;
+  border-color: #007bff;
+}
+
 .podcast-image {
   width: 80px;
   height: 80px;
@@ -78,12 +105,29 @@ const onToggleSelect = () => {
   margin-right: 1rem;
 }
 
-/* visual feedback more then 5 select */
-.checkbox-container {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.podcast-name {
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.podcast-meta {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+/* Disabled selection styles */
+.disabled-selection {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Tooltip styles */
+.tooltip-container {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .tooltip {
@@ -97,9 +141,9 @@ const onToggleSelect = () => {
   padding: 5px 8px;
   position: absolute;
   z-index: 10;
-  bottom: 100%;
+  top: -5px;
   right: 0;
-  transform: translateY(-5px);
+  transform: translateY(-100%);
   opacity: 0;
   transition: opacity 0.3s;
   font-size: 0.8rem;
@@ -107,13 +151,9 @@ const onToggleSelect = () => {
   pointer-events: none;
 }
 
-.checkbox-container:hover .tooltip {
+.disabled-selection:hover .tooltip,
+.disabled-selection:focus .tooltip {
   visibility: visible;
   opacity: 1;
-}
-
-.disabled-selection input[type='checkbox'] {
-  cursor: not-allowed;
-  opacity: 0.6;
 }
 </style>
