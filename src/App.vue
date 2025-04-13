@@ -10,7 +10,7 @@ import { handleSectionKeyDown } from './utils/keyboardNavigation.util'
     <!-- Skip Link -->
     <a href="#search-section" class="skip-link">Skip to content</a>
 
-    <header role="banner" aria-label="Spoticast Calendar App" tabindex="0">
+    <header role="banner" aria-label="Spoticast Calendar" tabindex="0">
       <h1>Spoticast Calendar</h1>
       <KeyboardNavInstruction />
     </header>
