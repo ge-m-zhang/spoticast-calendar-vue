@@ -4,13 +4,11 @@ import { ref, computed } from 'vue'
 // Contrast Cheker
 // https://webaim.org/resources/contrastchecker/
 const DISTINCT_COLORS = [
-  '#255D88' /* Blue Steel */,
-  '#296135' /* Forest Green */,
-  '#93381A' /* Terracotta */,
-  '#8B62AA' /* Amethyst */,
-  '#6A4F11' /* Amber Gold */,
-  '#245B58' /* Teal */,
-  '#A02C4F' /* Raspberry */,
+  '#0B4B30' /* Dark Forest Green */,
+  '#0054A3' /* Dark Blue */,
+  '#392083' /* Deep Purple 800 */,
+  '#5F3800' /*Dark Amber Gold */,
+  '#A20769' /* Dark Raspberry */,
 ]
 
 export const useColorStore = defineStore('color', () => {
