@@ -1,17 +1,33 @@
 <script setup lang="ts">
 import CalendarSection from './components/calendar-section/CalendarSection.vue'
 import SearchSection from './components/search-section/SearchSection.vue'
+import { handleSectionKeyDown } from './utils/keyboardNavigation.util'
 </script>
 
 <template>
   <div id="app">
-    <header>
+    <header role="banner">
       <h1>Spoticast Calendar</h1>
     </header>
-
     <main>
-      <div class="search"><SearchSection /></div>
-      <div class="calendar"><CalendarSection /></div>
+      <div
+        class="search"
+        aria-label="Podcast search section"
+        tabindex="0"
+        @keydown="handleSectionKeyDown"
+        aria-description="Press Right/Down Arrow to navigate to Calendar section, Enter to navigate within section"
+      >
+        <SearchSection />
+      </div>
+      <div
+        class="calendar"
+        aria-label="Calendar section"
+        tabindex="0"
+        @keydown="handleSectionKeyDown"
+        aria-description="Press Left/Up Arrow to navigate to Search section, Enter to navigate within section"
+      >
+        <CalendarSection />
+      </div>
     </main>
   </div>
 </template>
@@ -32,23 +48,21 @@ main {
   gap: 0.5rem;
   padding: 0.5rem;
   height: calc(90vh - 130px);
-
   align-items: stretch;
 }
 
 /* Sections */
-
 .search,
 .calendar {
   padding: 20px;
   overflow: auto; /* Add individual scrollbars */
   height: 110%; /* Full height */
 }
+
 .search {
   flex: 1;
   background-color: #ecf3ed;
   padding: 1rem;
-
   flex-direction: column;
 }
 
@@ -64,5 +78,11 @@ main {
     flex-direction: row;
     align-items: flex-start;
   }
+}
+
+/* Focus styles for better keyboard navigation */
+:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
 }
 </style>
