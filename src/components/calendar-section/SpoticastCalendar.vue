@@ -163,6 +163,11 @@ watch(
   border-radius: 4px;
 }
 
+:deep(.fc-event:focus) {
+  outline: 2px solid #ffab00; /* Your preferred focus outline color */
+  background-color: #ffffff; /* Optionally update the background */
+}
+
 /* Style for the podcast name */
 :deep(.podcast-name) {
   font-size: 0.6em;
