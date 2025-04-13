@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-// Contrast Cheker
+// Contrast Checker
 // https://webaim.org/resources/contrastchecker/
 const DISTINCT_COLORS = [
   '#0B4B30' /* Dark Forest Green */,
