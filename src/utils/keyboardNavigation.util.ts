@@ -6,28 +6,48 @@ export const focusBackToSearch = (): void => {
   }
 }
 
-// Helper function to focus between sections
-export const handleSectionKeyDown = (e: KeyboardEvent) => {
-  // Only process keyboard navigation when the section itself has focus
-  if (document.activeElement !== e.currentTarget) return
+// keyboard-navigation.ts
+export const handleSectionKeyDown = (event: KeyboardEvent): void => {
+  const currentTarget = event.currentTarget as HTMLElement
 
-  // Navigate within the section with Arrow keys
+  const isSearchSection = currentTarget.classList.contains('search')
+  const isCalendarSection = currentTarget.classList.contains('calendar')
 
-  // Navigate to calendar section with ArrowRight/ArrowDown key
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-    e.preventDefault()
-    const calendarSection = document.querySelector('.calendar')
-    if (calendarSection) {
-      ;(calendarSection as HTMLElement).focus()
+  // Check if the event target is the section itself and not a child element
+  // This ensures we only handle navigation at the section level
+  if (event.target === currentTarget) {
+    // Handle Escape key to unfocus the current section
+    if (event.key === 'Escape') {
+      currentTarget.blur()
+      return
+    }
+
+    if (isSearchSection && (event.key === 'ArrowRight' || event.key === 'ArrowDown')) {
+      // Navigate from Search to Calendar
+      event.preventDefault()
+      const calendarElement = document.querySelector('.calendar') as HTMLElement
+      if (calendarElement) calendarElement.focus()
+    } else if (isCalendarSection && (event.key === 'ArrowLeft' || event.key === 'ArrowUp')) {
+      // Navigate from Calendar to Search
+      event.preventDefault()
+      const searchElement = document.querySelector('.search') as HTMLElement
+      if (searchElement) searchElement.focus()
+    } else if (event.key === 'Enter') {
+      // Handle navigation within section
+      navigateWithinSection(currentTarget)
     }
   }
 
-  // Navigate to search section with ArrowLeft/ArrowUp key
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-    e.preventDefault()
-    const searchSection = document.querySelector('.search')
-    if (searchSection) {
-      ;(searchSection as HTMLElement).focus()
-    }
+  // If the event target is a child element, let the event propagate
+  // to be handled by child component handlers
+}
+
+export const navigateWithinSection = (section: HTMLElement): void => {
+  // Implementation for inner navigation logic
+  const firstFocusableElement = section.querySelector(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+  ) as HTMLElement
+  if (firstFocusableElement) {
+    firstFocusableElement.focus()
   }
 }

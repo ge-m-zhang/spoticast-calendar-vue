@@ -15,7 +15,7 @@ import { handleSectionKeyDown } from './utils/keyboardNavigation.util'
         aria-label="Podcast search section"
         tabindex="0"
         @keydown="handleSectionKeyDown"
-        aria-description="Press Right/Down Arrow to navigate to Calendar section, Enter to navigate within section"
+        aria-description="Press Right/Down Arrow to navigate to Calendar section, Enter to navigate within section, Escape to unfocus"
       >
         <SearchSection />
       </div>
@@ -24,7 +24,7 @@ import { handleSectionKeyDown } from './utils/keyboardNavigation.util'
         aria-label="Calendar section"
         tabindex="0"
         @keydown="handleSectionKeyDown"
-        aria-description="Press Left/Up Arrow to navigate to Search section, Enter to navigate within section"
+        aria-description="Press Left/Up Arrow to navigate to Search section, Enter to navigate within section, Escape to unfocus"
       >
         <CalendarSection />
       </div>
