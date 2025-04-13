@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { Podcast } from '@/types/app.type'
+import { focusBackToSearch } from '@/utils/keyboardNavigation.util'
 
 const props = defineProps<{
   podcast: Podcast
@@ -11,14 +13,35 @@ const emit = defineEmits<{
   (e: 'toggleSelect', id: string): void
 }>()
 
+const checkboxId = ref(`podcast-${props.podcast.id}`)
+
 const onToggleSelect = () => {
-  emit('toggleSelect', props.podcast.id)
+  if (!props.selectionDisabled) {
+    emit('toggleSelect', props.podcast.id)
+  }
+}
+
+const onCheckboxKeyDown = (event: KeyboardEvent): void => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    onToggleSelect()
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    focusBackToSearch()
+  }
+}
+
+const aKeyDown = (event: KeyboardEvent): void => {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    focusBackToSearch()
+  }
 }
 </script>
 
 <template>
-  <div class="podcast-item">
-    <img :src="podcast.imageUrl" alt="" class="podcast-image" />
+  <div class="podcast-item" :class="{ 'is-selected': isSelected }">
+    <img :src="podcast.imageUrl" :alt="`Cover image for ${podcast.name}`" class="podcast-image" />
     <div class="podcast-info">
       <h3>
         <a
@@ -26,22 +49,28 @@ const onToggleSelect = () => {
           target="_blank"
           rel="noopener noreferrer"
           class="podcast-link"
+          :aria-label="`Open ${podcast.name} on Spotify (opens in new tab)`"
+          @keydown="aKeyDown"
         >
           {{ podcast.name }}
         </a>
       </h3>
-      <!-- <p>{{ podcast.description }}</p> -->
       <div class="podcast-meta">Publisher: {{ podcast.publisher }}</div>
       <div class="podcast-meta">Total Episodes: {{ podcast.totalEpisodes }}</div>
     </div>
     <div class="checkbox-container" :class="{ 'disabled-selection': selectionDisabled }">
       <input
         type="checkbox"
+        :id="checkboxId"
         :checked="isSelected"
         :disabled="selectionDisabled"
         @change="onToggleSelect"
+        @keydown="onCheckboxKeyDown"
+        :aria-label="`Select ${podcast.name} for calendar`"
       />
-      <span v-if="selectionDisabled" class="tooltip">Maximum of 5 podcasts can be selected</span>
+      <span v-if="selectionDisabled" class="tooltip" role="tooltip">
+        Maximum of 5 podcasts can be selected
+      </span>
     </div>
   </div>
 </template>
@@ -61,6 +90,12 @@ const onToggleSelect = () => {
 .podcast-item:hover {
   background-color: #f0f0f0; /* Slightly darker on hover */
 }
+
+.is-selected {
+  background-color: #f8f9fa;
+  border-color: #007bff;
+}
+
 .podcast-image {
   width: 80px;
   height: 80px;
@@ -76,6 +111,11 @@ const onToggleSelect = () => {
   display: inline-block;
   max-width: 100%;
   margin-right: 1rem;
+}
+
+.podcast-link:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
 }
 
 /* visual feedback more then 5 select */
@@ -107,7 +147,8 @@ const onToggleSelect = () => {
   pointer-events: none;
 }
 
-.checkbox-container:hover .tooltip {
+.checkbox-container:hover .tooltip,
+.checkbox-container:focus-within .tooltip {
   visibility: visible;
   opacity: 1;
 }
@@ -115,5 +156,20 @@ const onToggleSelect = () => {
 .disabled-selection input[type='checkbox'] {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+input[type='checkbox']:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  border-radius: 4px;
+  background-color: #fff;
+  border: 1px solid #007bff;
 }
 </style>
