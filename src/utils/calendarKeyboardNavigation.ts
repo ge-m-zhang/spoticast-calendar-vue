@@ -47,10 +47,9 @@ export function useCalendarKeyboardNavigation(
   // Handles keyboard events on calendar events
   const handleEventKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()(
-        // Trigger click on the event
-        e.currentTarget as HTMLElement,
-      ).click()
+      e.preventDefault()
+      // Trigger click on the event
+      ;(e.currentTarget as HTMLElement).click()
     } else if (e.key === 'Escape') {
       e.preventDefault()
       const calendarSection = document.querySelector('.calendar')
