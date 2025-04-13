@@ -1,8 +1,7 @@
 <template>
-  <section class="calendar-section">
+  <section class="calendar-section" role="region" aria-labelledby="calendar-heading">
     <CalendarHeader />
-
-    <div class="calendar-wrapper">
+    <div class="calendar-wrapper" aria-label="Podcast episodes calendar">
       <SpoticastCalendar />
     </div>
   </section>
@@ -26,6 +25,7 @@ import CalendarHeader from './CalendarHeader.vue'
   flex-direction: column;
   margin-bottom: 10px;
   flex-grow: 1;
+  position: relative;
 }
 
 .loading-overlay {
