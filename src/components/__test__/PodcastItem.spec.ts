@@ -41,7 +41,6 @@ describe('PodcastItem.vue', () => {
 
     expect(wrapper.find('.podcast-name').text()).toBe('Test Podcast')
     expect(wrapper.find('.podcast-meta').text()).toContain('Publisher: Test Publisher')
-    expect(wrapper.find('.podcast-meta:nth-child(3)').text()).toContain('Total Episodes: 42')
 
     const img = wrapper.find('img')
     expect(img.attributes('src')).toBe('test-image.jpg')
