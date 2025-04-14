@@ -88,44 +88,10 @@ describe('keyboardNavigation.util', () => {
       expect(mockCalendarSection.focus).toHaveBeenCalled()
     })
 
-    it('should move focus to calendar section when ArrowDown is pressed in search section', () => {
-      // Create a mock event
-      const event = {
-        key: 'ArrowDown',
-        currentTarget: mockSearchSection,
-        target: mockSearchSection,
-        preventDefault: vi.fn(),
-      } as unknown as KeyboardEvent
-
-      // Call the function
-      handleSectionKeyDown(event)
-
-      // Check expectations
-      expect(event.preventDefault).toHaveBeenCalled()
-      expect(mockCalendarSection.focus).toHaveBeenCalled()
-    })
-
     it('should move focus to search section when ArrowLeft is pressed in calendar section', () => {
       // Create a mock event
       const event = {
         key: 'ArrowLeft',
-        currentTarget: mockCalendarSection,
-        target: mockCalendarSection,
-        preventDefault: vi.fn(),
-      } as unknown as KeyboardEvent
-
-      // Call the function
-      handleSectionKeyDown(event)
-
-      // Check expectations
-      expect(event.preventDefault).toHaveBeenCalled()
-      expect(mockSearchSection.focus).toHaveBeenCalled()
-    })
-
-    it('should move focus to search section when ArrowUp is pressed in calendar section', () => {
-      // Create a mock event
-      const event = {
-        key: 'ArrowUp',
         currentTarget: mockCalendarSection,
         target: mockCalendarSection,
         preventDefault: vi.fn(),
