@@ -1,159 +1,276 @@
 import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
 import { fetchEpisodes } from '@/api/spotify'
 import type { SpotifyEpisode } from '@/types/Spotify.type'
-import { usePodcastStore } from './podcastStore'
 import type { Episode } from '@/types/app.type'
+import { usePodcastStore } from './podcastStore'
 
-interface EpisodeState {
-  episodes: Episode[]
-  episodesByDate: Record<string, Episode[]>
-  episodesByPodcast: Record<string, Episode[]>
-  isLoading: boolean
-  error: string | null
-}
+// Number of days before earliest loaded date to trigger loading more episodes
+const LOAD_MORE_THRESHOLD_DAYS = 21 // Three weeks threshold
 
 /**
- * Pinia store for managing episode state and actions.
- *
- * Handles fetching, transforming, and organizing episodes
- * from Spotify's API based on selected podcasts.
+ * Pinia store for managing episode state with infinite scrolling support.
  */
-export const useEpisodeStore = defineStore('episode', {
-  state: (): EpisodeState => ({
-    episodes: [],
-    episodesByDate: {},
-    episodesByPodcast: {},
-    isLoading: false,
-    error: null,
-  }),
-
-  actions: {
-    /**
-     * Fetches episodes for a given podcast ID and name from Spotify.
-     *
-     * @param {string} podcastId - The Spotify ID of the podcast
-     * @param {string} podcastName - The name of the podcast
-     * @returns {Promise<Episode[]>} A promise that resolves to an array of episodes
-     */
-    async fetchEpisodesForPodcast(podcastId: string, podcastName: string): Promise<Episode[]> {
-      this.isLoading = true
-      this.error = null
-
-      try {
-        // Use the updated fetchEpisodes function that returns SpotifyEpisode[]
-        const spotifyEpisodes = await fetchEpisodes(podcastId)
-        const transformedEpisodes = spotifyEpisodes.map((episode) =>
-          this.transformToEpisode(episode, podcastId, podcastName),
-        )
-
-        // Add to main episodes array
-        this.episodes = [...this.episodes, ...transformedEpisodes]
-
-        // Organize by podcast
-        this.episodesByPodcast[podcastId] = transformedEpisodes
-
-        // Organize by date
-        transformedEpisodes.forEach((episode) => {
-          const dateKey = this.getDateKey(episode.releaseDate)
-          if (!this.episodesByDate[dateKey]) {
-            this.episodesByDate[dateKey] = []
-          }
-          this.episodesByDate[dateKey] = [...this.episodesByDate[dateKey], episode]
-        })
-
-        return transformedEpisodes
-      } catch (err) {
-        this.error = err instanceof Error ? err.message : 'Failed to fetch episodes'
-        return []
-      } finally {
-        this.isLoading = false
+export const useEpisodeStore = defineStore('episode', () => {
+  // State
+  const episodes = ref<Episode[]>([])
+  const episodesByDate = ref<Record<string, Episode[]>>({})
+  const episodesByPodcast = ref<Record<string, Episode[]>>({})
+  const paginationState = ref<
+    Record<
+      string,
+      {
+        offset: number
+        hasMore: boolean
+        earliestDate: string
+        isLoadingMore: boolean
       }
-    },
+    >
+  >({})
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
 
-    /**
-     * Fetches episodes for all selected podcasts.
-     *
-     * This method will clear existing episodes before fetching new ones.
-     */
-    async fetchEpisodesForSelectedPodcasts(): Promise<void> {
-      const podcastStore = usePodcastStore()
-      const selectedPodcasts = podcastStore.selectedPodcasts
+  // Getters
+  const datesWithEpisodes = computed(() => Object.keys(episodesByDate.value))
+  const isLoadingMoreEpisodes = computed(() =>
+    Object.values(paginationState.value).some((state) => state.isLoadingMore),
+  )
 
-      // Clear existing episodes if needed
-      this.clearEpisodes()
+  /**
+   * Fetches episodes for a given podcast.
+   */
+  async function fetchEpisodesForPodcast(
+    podcastId: string,
+    podcastName: string,
+    offset: number = 0,
+  ): Promise<Episode[]> {
+    // Set appropriate loading state
+    if (offset === 0) {
+      isLoading.value = true
+    } else if (paginationState.value[podcastId]) {
+      paginationState.value[podcastId].isLoadingMore = true
+    }
 
-      const fetchPromises = selectedPodcasts.map((podcast) =>
-        this.fetchEpisodesForPodcast(podcast.id, podcast.name),
+    error.value = null
+
+    try {
+      // Fetch episodes with pagination
+      const result = await fetchEpisodes(podcastId, offset)
+      const newEpisodes = result.items.map((episode) =>
+        transformToEpisode(episode, podcastId, podcastName),
       )
 
-      await Promise.all(fetchPromises)
-    },
+      // Update pagination tracking
+      updatePaginationTracking(podcastId, newEpisodes, result.hasMore, offset + result.items.length)
 
-    // Helper to get date key in YYYY-MM-DD format
-    getDateKey(dateString: string): string {
-      const date = new Date(dateString)
-      return date.toISOString().split('T')[0]
-    },
+      // Add episodes to collections (with duplicate prevention)
+      addEpisodesToCollections(podcastId, newEpisodes)
 
-    // Transform Spotify API response to app's Episode type
-    transformToEpisode(episode: SpotifyEpisode, podcastId: string, podcastName: string): Episode {
-      return {
-        id: episode.id,
-        podcastId: podcastId,
-        podcastName: podcastName,
-        name: episode.name,
-        description: episode.description,
-        htmlDescription: episode.html_description,
-        releaseDate: episode.release_date,
-        releaseDatePrecision: episode.release_date_precision,
-        duration: episode.duration_ms,
-        audioUrl: episode.audio_preview_url || undefined,
-        uri: episode.uri,
-        images: episode.images.map((img) => ({
-          url: img.url,
-          height: img.height,
-          width: img.width,
-        })),
+      return newEpisodes
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch episodes'
+      return []
+    } finally {
+      // Reset loading state
+      if (offset === 0) {
+        isLoading.value = false
+      } else if (paginationState.value[podcastId]) {
+        paginationState.value[podcastId].isLoadingMore = false
       }
-    },
+    }
+  }
 
-    clearEpisodes(): void {
-      this.episodes = []
-      this.episodesByDate = {}
-      this.episodesByPodcast = {}
-    },
-  },
+  /**
+   * Update pagination tracking for a podcast
+   */
+  function updatePaginationTracking(
+    podcastId: string,
+    newEpisodes: Episode[],
+    hasMore: boolean,
+    newOffset: number,
+  ): void {
+    // Find earliest date in new episodes
+    const earliestDate = findEarliestDate(newEpisodes)
 
-  getters: {
-    /**
-     * Get episodes for a specific date.
-     *
-     * While calendarStore handles most calendar-specific logic,
-     * this getter provides direct date-based access which can be useful for:
-     * - Components that need date-filtered episodes outside the calendar context
-     * - Future features like date-specific lists or statistics
-     * - Keeping data access consistent throughout the application
-     */
-    getEpisodesByDate: (state) => (date: string) => {
-      return state.episodesByDate[date] || []
-    },
+    // Initialize or update pagination state
+    if (!paginationState.value[podcastId]) {
+      // First fetch for this podcast
+      paginationState.value[podcastId] = {
+        offset: newOffset,
+        hasMore,
+        earliestDate,
+        isLoadingMore: false,
+      }
+    } else {
+      // Update existing state
+      const currentState = paginationState.value[podcastId]
+      paginationState.value[podcastId] = {
+        offset: newOffset,
+        hasMore,
+        // Only update if new batch has earlier date
+        earliestDate:
+          earliestDate < currentState.earliestDate ? earliestDate : currentState.earliestDate,
+        isLoadingMore: false,
+      }
+    }
+  }
 
-    /**
-     * Get episodes for a specific podcast.
-     *
-     * Provides podcast-specific filtering which can be valuable for:
-     * - Podcast detail pages or components
-     * - Creating podcast-specific analytics or views
-     * - Offering filtering options independent of the calendar
-     * - Supporting podcast-focused features without duplicating filtering logic
-     */
-    getEpisodesByPodcast: (state) => (podcastId: string) => {
-      return state.episodesByPodcast[podcastId] || []
-    },
+  /**
+   * Add episodes to all collections with duplicate prevention
+   */
+  function addEpisodesToCollections(podcastId: string, newEpisodes: Episode[]): void {
+    if (newEpisodes.length === 0) return
 
-    // Get all dates that have episodes (useful for calendar highlighting)
-    datesWithEpisodes: (state) => {
-      return Object.keys(state.episodesByDate)
-    },
-  },
+    // Add to main episodes array (avoiding duplicates)
+    const newEpisodeIds = new Set(newEpisodes.map((ep) => ep.id))
+    episodes.value = [...episodes.value.filter((ep) => !newEpisodeIds.has(ep.id)), ...newEpisodes]
+
+    // Add to podcast-specific collection
+    if (!episodesByPodcast.value[podcastId]) {
+      episodesByPodcast.value[podcastId] = newEpisodes
+    } else {
+      // Prevent duplicates
+      const existingIds = new Set(episodesByPodcast.value[podcastId].map((ep) => ep.id))
+      episodesByPodcast.value[podcastId] = [
+        ...episodesByPodcast.value[podcastId],
+        ...newEpisodes.filter((ep) => !existingIds.has(ep.id)),
+      ]
+    }
+
+    // Add to date-specific collections
+    newEpisodes.forEach((episode) => {
+      const dateKey = getDateKey(episode.releaseDate)
+      if (!episodesByDate.value[dateKey]) {
+        episodesByDate.value[dateKey] = []
+      }
+      // Prevent duplicates
+      if (!episodesByDate.value[dateKey].some((ep) => ep.id === episode.id)) {
+        episodesByDate.value[dateKey] = [...episodesByDate.value[dateKey], episode]
+      }
+    })
+  }
+
+  /**
+   * Fetch episodes for all selected podcasts
+   */
+  async function fetchEpisodesForSelectedPodcasts(): Promise<void> {
+    const podcastStore = usePodcastStore()
+    const selectedPodcasts = podcastStore.selectedPodcasts
+
+    // Clear existing data
+    clearEpisodes()
+
+    // Fetch all podcasts in parallel
+    await Promise.all(
+      selectedPodcasts.map((podcast) => fetchEpisodesForPodcast(podcast.id, podcast.name)),
+    )
+  }
+
+  /**
+   * Check if more episodes need to be loaded based on calendar view
+   */
+  async function checkAndLoadMoreEpisodes(viewStartDate: Date): Promise<boolean> {
+    const podcastStore = usePodcastStore()
+    const viewStartDateStr = viewStartDate.toISOString().split('T')[0]
+    let loadedNewContent = false
+
+    for (const podcast of podcastStore.selectedPodcasts) {
+      const state = paginationState.value[podcast.id]
+
+      // Skip if no more episodes or already loading
+      if (!state || !state.hasMore || state.isLoadingMore) continue
+
+      // Calculate threshold date
+      const thresholdDate = new Date(state.earliestDate)
+      thresholdDate.setDate(thresholdDate.getDate() - LOAD_MORE_THRESHOLD_DAYS)
+      const thresholdDateStr = thresholdDate.toISOString().split('T')[0]
+
+      // Check if should load more content
+      if (viewStartDateStr <= thresholdDateStr) {
+        // Load more episodes
+        const newEpisodes = await fetchEpisodesForPodcast(podcast.id, podcast.name, state.offset)
+
+        if (newEpisodes.length > 0) {
+          loadedNewContent = true
+        }
+      }
+    }
+
+    return loadedNewContent
+  }
+
+  // Helper functions
+  function findEarliestDate(episodes: Episode[]): string {
+    if (episodes.length === 0) return new Date().toISOString().split('T')[0]
+
+    const dates = episodes.map((ep) => new Date(ep.releaseDate))
+    const earliestDate = new Date(Math.min(...dates.map((d) => d.getTime())))
+    return earliestDate.toISOString().split('T')[0]
+  }
+
+  function getDateKey(dateString: string): string {
+    const date = new Date(dateString)
+    return date.toISOString().split('T')[0]
+  }
+
+  function transformToEpisode(
+    episode: SpotifyEpisode,
+    podcastId: string,
+    podcastName: string,
+  ): Episode {
+    return {
+      id: episode.id,
+      podcastId,
+      podcastName,
+      name: episode.name,
+      description: episode.description,
+      htmlDescription: episode.html_description,
+      releaseDate: episode.release_date,
+      releaseDatePrecision: episode.release_date_precision,
+      duration: episode.duration_ms,
+      audioUrl: episode.audio_preview_url || undefined,
+      uri: episode.uri,
+      images: episode.images.map((img) => ({
+        url: img.url,
+        height: img.height,
+        width: img.width,
+      })),
+    }
+  }
+
+  function getEpisodesByDate(date: string): Episode[] {
+    return episodesByDate.value[date] || []
+  }
+
+  function getEpisodesByPodcast(podcastId: string): Episode[] {
+    return episodesByPodcast.value[podcastId] || []
+  }
+
+  function clearEpisodes(): void {
+    episodes.value = []
+    episodesByDate.value = {}
+    episodesByPodcast.value = {}
+    paginationState.value = {}
+  }
+
+  return {
+    // State
+    episodes,
+    episodesByDate,
+    episodesByPodcast,
+    isLoading,
+    error,
+
+    // Getters
+    datesWithEpisodes,
+    isLoadingMoreEpisodes,
+
+    // Actions
+    fetchEpisodesForPodcast,
+    fetchEpisodesForSelectedPodcasts,
+    checkAndLoadMoreEpisodes,
+    getEpisodesByDate,
+    getEpisodesByPodcast,
+    clearEpisodes,
+  }
 })

@@ -14,7 +14,6 @@ export const handleSectionKeyDown = (event: KeyboardEvent): void => {
   const isCalendarSection = currentTarget.classList.contains('calendar')
 
   // Check if the event target is the section itself and not a child element
-  // This ensures we only handle navigation at the section level
   if (event.target === currentTarget) {
     // Handle Escape key to unfocus the current section
     if (event.key === 'Escape') {

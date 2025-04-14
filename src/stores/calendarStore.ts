@@ -1,63 +1,77 @@
 import { defineStore } from 'pinia'
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useColorStore } from './colorStore'
 import { useEpisodeStore } from './episodeStore'
 import { usePodcastStore } from './podcastStore'
 import type { CalendarEvent, Episode } from '@/types/app.type'
 
 /**
- * Pinia store for managing calendar events and actions.
- *
- * This store is responsible for transforming episodes into
- * FullCalendar event format and managing the state of the calendar.
- *
- * Ref:
- * https://fullcalendar.io/docs/event-object
+ * Pinia store for managing calendar events and handling infinite scrolling.
  */
 export const useCalendarStore = defineStore('calendar', () => {
+  // State for tracking calendar view date range
+  const lastViewStartDate = ref<Date | null>(null)
+  const lastViewEndDate = ref<Date | null>(null)
+  const isInitialRender = ref(true)
+  const lastSelectedPodcastIds = ref<Set<string>>(new Set())
+
+  // Get other stores
   const colorStore = useColorStore()
   const episodeStore = useEpisodeStore()
   const podcastStore = usePodcastStore()
 
-  // Getters
-  const selectedPodcasts = computed(() => podcastStore.selectedPodcasts)
-  const episodes = computed(() => episodeStore.episodes)
-
   /**
-   * Map episodes to FullCalendar event format with Date objects
+   * Map episodes to FullCalendar event format
    */
   const calendarEvents = computed((): CalendarEvent[] => {
-    if (!episodes.value || !selectedPodcasts.value || selectedPodcasts.value.length === 0) {
+    const selectedPodcasts = podcastStore.selectedPodcasts
+    const episodes = episodeStore.episodes
+
+    if (!episodes.length || !selectedPodcasts.length) {
       return []
     }
 
-    const currentlySelectedIds = new Set(selectedPodcasts.value.map((podcast) => podcast.id))
+    const currentlySelectedIds = new Set(selectedPodcasts.map((podcast) => podcast.id))
 
-    // Update color assignments based on currently selected podcasts
+    // Check if podcast selection has changed
+    const hasSelectionChanged =
+      lastSelectedPodcastIds.value.size !== currentlySelectedIds.size ||
+      [...currentlySelectedIds].some((id) => !lastSelectedPodcastIds.value.has(id)) ||
+      [...lastSelectedPodcastIds.value].some((id) => !currentlySelectedIds.has(id))
+
+    // Update the last selected podcast ids
+    if (hasSelectionChanged) {
+      lastSelectedPodcastIds.value = currentlySelectedIds
+
+      // Reset initial render flag when selection changes
+      isInitialRender.value = true
+    }
+
+    // Update color assignments
     colorStore.updateColorAssignments(currentlySelectedIds)
 
-    // Ensure all selected podcasts have a color assigned
-    selectedPodcasts.value.forEach((podcast) => {
+    // Ensure all selected podcasts have colors assigned
+    selectedPodcasts.forEach((podcast) => {
       colorStore.getPodcastColor(podcast.id)
     })
 
     // Filter episodes by selected podcasts
-    const filteredEpisodes = episodes.value.filter((episode) =>
+    const filteredEpisodes = episodes.filter((episode) =>
       currentlySelectedIds.has(episode.podcastId),
     )
 
+    // Convert to calendar events
     return filteredEpisodes.map((episode) => {
       const color = colorStore.getPodcastColor(episode.podcastId)
 
-      const startDate = new Date(episode.releaseDate)
       return {
         id: episode.id,
         title: `${episode.podcastName}: ${episode.name}`,
-        start: startDate,
+        start: new Date(episode.releaseDate),
         backgroundColor: color,
         borderColor: color,
         extendedProps: {
-          episode: episode,
+          episode,
           podcastName: episode.podcastName,
           podcastId: episode.podcastId,
         },
@@ -66,17 +80,71 @@ export const useCalendarStore = defineStore('calendar', () => {
   })
 
   /**
-   * Finds an episode by ID from the episode store
-   * @param episodeId The ID of the episode to find
+   * Updates the view date range and checks if more episodes are needed
+   */
+  async function updateViewDateRange(startDate: Date, endDate: Date): Promise<boolean> {
+    // Skip if this is the initial render
+    if (isInitialRender.value) {
+      isInitialRender.value = false
+      lastViewStartDate.value = startDate
+      lastViewEndDate.value = endDate
+      return false
+    }
+
+    // Store the new view dates
+    lastViewStartDate.value = startDate
+    lastViewEndDate.value = endDate
+
+    // Check if need to load more episodes based on the new date range
+    return await episodeStore.checkAndLoadMoreEpisodes(startDate)
+  }
+
+  /**
+   * Finds an episode by ID
    */
   function findEpisodeById(episodeId: string): Episode | undefined {
     return episodeStore.episodes.find((ep) => ep.id === episodeId)
   }
 
+  /**
+   * Reset the initial render flag (when changing podcasts)
+   */
+  function resetInitialRenderFlag(): void {
+    isInitialRender.value = true
+  }
+
+  /**
+   * Check if the podcast selection has changed
+   */
+  function hasPodcastSelectionChanged(): boolean {
+    const selectedPodcasts = podcastStore.selectedPodcasts
+    const currentlySelectedIds = new Set(selectedPodcasts.map((podcast) => podcast.id))
+
+    const hasChanged =
+      lastSelectedPodcastIds.value.size !== currentlySelectedIds.size ||
+      [...currentlySelectedIds].some((id) => !lastSelectedPodcastIds.value.has(id)) ||
+      [...lastSelectedPodcastIds.value].some((id) => !currentlySelectedIds.has(id))
+
+    // Update the stored set
+    lastSelectedPodcastIds.value = currentlySelectedIds
+
+    return hasChanged
+  }
+
   return {
+    // State
+    lastViewStartDate,
+    lastViewEndDate,
+    isInitialRender,
+    lastSelectedPodcastIds,
+
     // Getters
     calendarEvents,
+
     // Actions
+    updateViewDateRange,
     findEpisodeById,
+    resetInitialRenderFlag,
+    hasPodcastSelectionChanged,
   }
 })

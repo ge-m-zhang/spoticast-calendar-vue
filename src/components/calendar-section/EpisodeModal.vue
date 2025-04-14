@@ -79,7 +79,6 @@ const episodeUrl = computed(() => {
     return `https://open.spotify.com/episode/${episodeId}`
   }
 
-  // If we have an ID but no URI
   if (props.episode.id) {
     return `https://open.spotify.com/episode/${props.episode.id}`
   }
