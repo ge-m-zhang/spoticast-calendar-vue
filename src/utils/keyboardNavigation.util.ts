@@ -21,12 +21,12 @@ export const handleSectionKeyDown = (event: KeyboardEvent): void => {
       return
     }
 
-    if (isSearchSection && (event.key === 'ArrowRight' || event.key === 'ArrowDown')) {
+    if (isSearchSection && event.key === 'ArrowRight') {
       // Navigate from Search to Calendar
       event.preventDefault()
       const calendarElement = document.querySelector('.calendar') as HTMLElement
       if (calendarElement) calendarElement.focus()
-    } else if (isCalendarSection && (event.key === 'ArrowLeft' || event.key === 'ArrowUp')) {
+    } else if (isCalendarSection && event.key === 'ArrowLeft') {
       // Navigate from Calendar to Search
       event.preventDefault()
       const searchElement = document.querySelector('.search') as HTMLElement

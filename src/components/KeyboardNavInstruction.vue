@@ -47,8 +47,8 @@
         <div class="shortcuts-section">
           <h3>Section Navigation</h3>
           <ul>
-            <li><kbd>↓</kbd> <kbd>→</kbd> Navigate from Search to Calendar section</li>
-            <li><kbd>↑</kbd> <kbd>←</kbd> Navigate from Calendar to Search section</li>
+            <li><kbd>→</kbd> Navigate from Search to Calendar section</li>
+            <li><kbd>←</kbd> Navigate from Calendar to Search section</li>
           </ul>
         </div>
 
