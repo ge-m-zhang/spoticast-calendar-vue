@@ -7,6 +7,10 @@
   >
     <FullCalendar ref="fullCalendarRef" :options="calendarOptions" />
 
+    <div v-if="isLoadingMore" class="loading-indicator">
+      <span>Loading more episodes...</span>
+    </div>
+
     <EpisodeModal
       v-if="showEpisodeModal"
       :episode="selectedEpisode"
@@ -17,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import FullCalendar from '@fullcalendar/vue3'
 import EpisodeModal from '@/components/calendar-section/EpisodeModal.vue'
 import { useEpisodeStore } from '@/stores/episodeStore'
@@ -27,6 +31,7 @@ import { createEventContentRenderer, getCalendarOptions } from '@/configs/fullca
 import { useCalendarKeyboardNavigation } from '@/utils/calendarKeyboardNavigation'
 
 import type { Episode } from '@/types/app.type'
+import type { DatesSetArg } from '@fullcalendar/core'
 
 const episodeStore = useEpisodeStore()
 const podcastStore = usePodcastStore()
@@ -53,6 +58,7 @@ const selectedEpisode = ref<Episode>({
 
 const selectedPodcasts = computed(() => podcastStore.selectedPodcasts)
 const calendarEvents = computed(() => calendarStore.calendarEvents)
+const isLoadingMore = computed(() => episodeStore.isLoadingMoreEpisodes)
 
 // Initialize the keyboard navigation utility with direct access to the stores and refs
 const { handleEventClick, makeEventsFocusable, closeModal } = useCalendarKeyboardNavigation(
@@ -65,6 +71,17 @@ const { handleEventClick, makeEventsFocusable, closeModal } = useCalendarKeyboar
 const handleEscKey = (event: KeyboardEvent) => {
   if (event.key === 'Escape' && showEpisodeModal.value) {
     closeModal()
+  }
+}
+
+// **Handle dates change (calendar navigation)
+const handleDatesSet = async (dateInfo: DatesSetArg) => {
+  // Update the calendar store with the new date range and check if need to load more episodes
+  const loadedNewEpisodes = await calendarStore.updateViewDateRange(dateInfo.start, dateInfo.end)
+
+  // If loaded new episodes, make sure they are focusable
+  if (loadedNewEpisodes) {
+    setTimeout(makeEventsFocusable, 100)
   }
 }
 
@@ -86,6 +103,9 @@ const calendarOptions = computed(() => {
       setTimeout(makeEventsFocusable, 100)
     },
 
+    // Handle date changes for infinite scrolling pagination
+    datesSet: handleDatesSet,
+
     // Use the event click handler from our utility
     eventClick: handleEventClick,
   }
@@ -101,6 +121,11 @@ onMounted(() => {
   setTimeout(makeEventsFocusable, 100)
 })
 
+// Cleanup
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscKey)
+})
+
 watch(
   calendarEvents,
   () => {
@@ -113,11 +138,14 @@ watch(
   { deep: true },
 )
 
-// For some edge cases where the episode realse date might be in the past
+// For some edge cases where the episode release date might be in the past
 // when podcasts selection changes, navigate to most recent release date
 watch(
   selectedPodcasts,
   () => {
+    // Reset the initial render flag when podcasts change
+    calendarStore.resetInitialRenderFlag()
+
     setTimeout(() => {
       if (fullCalendarRef.value && episodeStore.datesWithEpisodes.length > 0) {
         const calendarApi = fullCalendarRef.value.getApi()
@@ -148,11 +176,28 @@ watch(
   display: flex;
   flex-direction: column;
   margin-bottom: 10px;
+  position: relative;
 }
 
 .calendar-container {
   width: 100%;
   flex: 1;
+}
+
+/* Loading indicator for more episodes */
+.loading-indicator {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(29, 185, 84, 0.7);
+  color: white;
+  font-weight: bold;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Target FullCalendar elements with :deep() */
@@ -164,8 +209,8 @@ watch(
 }
 
 :deep(.fc-event:focus) {
-  outline: 2px solid #ffab00; /* Your preferred focus outline color */
-  background-color: #ffffff; /* Optionally update the background */
+  outline: 2px solid #ffab00;
+  background-color: #ffffff;
 }
 
 /* Style for the podcast name */
