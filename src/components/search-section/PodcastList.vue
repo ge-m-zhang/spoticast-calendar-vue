@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed, watch } from 'vue'
 import { usePodcastStore } from '@/stores/podcastStore'
 import PodcastItem from './PodcastItem.vue'
 import { useEpisodeStore } from '@/stores/episodeStore'
@@ -9,32 +9,24 @@ const podcasts = computed(() => searchStore.podcasts)
 const selectedPodcastIds = computed(() => searchStore.selectedPodcastIds)
 const maxSelectionsReached = computed(() => searchStore.maxSelectionsReached)
 
-// ---- test for episode fetching functions!
-
-// test ---- temp!!
-
-watchEffect(() => {
-  console.log('Current selectedPodcastIds:', [...selectedPodcastIds.value])
-  // If there are any selected podcasts, fetch episodes when selection changes
-  if (selectedPodcastIds.value.length > 0) {
-    console.log('Attempting to fetch episodes for selected podcasts...')
-    fetchEpisodesAndLog()
-  }
-})
-
 const episodeStore = useEpisodeStore()
-// Function to fetch episodes and log results
-const fetchEpisodesAndLog = async () => {
-  try {
-    await episodeStore.fetchEpisodesForSelectedPodcasts()
 
-    console.log('First few episodes:', episodeStore.episodes.slice(0, 3))
-    console.log('Dates with episodes:', Object.keys(episodeStore.episodesByDate))
-  } catch (error) {
-    console.error('Error fetching episodes:', error)
-  }
-}
-// test ----------- end
+// Watch for changes to selectedPodcastIds and fetch episodes when the selection changes.
+watch(
+  selectedPodcastIds,
+  async (newIds) => {
+    if (newIds.length > 0) {
+      try {
+        await episodeStore.fetchEpisodesForSelectedPodcasts()
+      } catch (error) {
+        console.error('Error fetching episodes:', error)
+      }
+    }
+  },
+  { deep: true },
+)
+// temp
+console.log('First few episodes:', episodeStore.episodes.slice(0, 5))
 
 const toggleSelect = (podcastId: string) => {
   searchStore.togglePodcastSelection(podcastId)
