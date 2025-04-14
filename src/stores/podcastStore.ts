@@ -12,7 +12,7 @@ interface PodcastState {
   error: string | null
 }
 
-const MAX_PODCAST_SELECTIONS = 5
+export const MAX_PODCAST_SELECTIONS = 5
 
 /**
  * Pinia store for managing podcast search state and actions.
