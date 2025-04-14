@@ -85,6 +85,23 @@ const handleDatesSet = async (dateInfo: DatesSetArg) => {
   }
 }
 
+// Function to navigate to the most recent episode date
+const navigateToMostRecentDate = () => {
+  if (fullCalendarRef.value && episodeStore.datesWithEpisodes.length > 0) {
+    const calendarApi = fullCalendarRef.value.getApi()
+
+    const sortedDates = [...episodeStore.datesWithEpisodes].sort(
+      (a, b) => new Date(a).getTime() - new Date(b).getTime(),
+    )
+
+    if (sortedDates.length > 0) {
+      const mostRecentDate = sortedDates[sortedDates.length - 1]
+      calendarApi.gotoDate(mostRecentDate)
+      setTimeout(makeEventsFocusable, 100)
+    }
+  }
+}
+
 const calendarOptions = computed(() => {
   const customOptions = {
     initialDate:
@@ -126,6 +143,7 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleEscKey)
 })
 
+// Refetch events when calendarEvents changes
 watch(
   calendarEvents,
   () => {
@@ -138,29 +156,41 @@ watch(
   { deep: true },
 )
 
-// For some edge cases where the episode release date might be in the past
-// when podcasts selection changes, navigate to most recent release date
+// Watch for episodes loading changes
+watch(
+  () => episodeStore.isLoading,
+  (newVal, oldVal) => {
+    // When loading episodes finishes
+    if (oldVal === true && newVal === false) {
+      // Wait for episodes to be processed
+      setTimeout(navigateToMostRecentDate, 300)
+    }
+  },
+)
+
+// When podcasts selection changes
 watch(
   selectedPodcasts,
-  () => {
+  async (newPodcasts, oldPodcasts) => {
     // Reset the initial render flag when podcasts change
     calendarStore.resetInitialRenderFlag()
 
-    setTimeout(() => {
-      if (fullCalendarRef.value && episodeStore.datesWithEpisodes.length > 0) {
-        const calendarApi = fullCalendarRef.value.getApi()
+    // Check if there's an actual change in the selection (to handle re-selection)
+    const newIds = new Set(newPodcasts.map((p) => p.id))
+    const oldIds = new Set((oldPodcasts || []).map((p) => p.id))
 
-        const sortedDates = [...episodeStore.datesWithEpisodes].sort(
-          (a, b) => new Date(a).getTime() - new Date(b).getTime(),
-        )
+    const hasSelectionChanged =
+      newPodcasts.length !== (oldPodcasts?.length || 0) ||
+      newPodcasts.some((p) => !oldIds.has(p.id)) ||
+      (oldPodcasts || []).some((p) => !newIds.has(p.id))
 
-        if (sortedDates.length > 0) {
-          const mostRecentDate = sortedDates[sortedDates.length - 1]
-          calendarApi.gotoDate(mostRecentDate)
-          setTimeout(makeEventsFocusable, 100)
-        }
-      }
-    }, 300)
+    if (hasSelectionChanged) {
+      // Wait for the episodes to load
+      // The navigation will happen in the isLoading watcher
+    } else if (episodeStore.datesWithEpisodes.length > 0) {
+      // If re-selecting the same podcast, need to explicitly navigate
+      setTimeout(navigateToMostRecentDate, 300)
+    }
   },
   { deep: true },
 )

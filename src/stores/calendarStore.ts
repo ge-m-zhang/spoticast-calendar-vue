@@ -13,6 +13,7 @@ export const useCalendarStore = defineStore('calendar', () => {
   const lastViewStartDate = ref<Date | null>(null)
   const lastViewEndDate = ref<Date | null>(null)
   const isInitialRender = ref(true)
+  const lastSelectedPodcastIds = ref<Set<string>>(new Set())
 
   // Get other stores
   const colorStore = useColorStore()
@@ -31,6 +32,20 @@ export const useCalendarStore = defineStore('calendar', () => {
     }
 
     const currentlySelectedIds = new Set(selectedPodcasts.map((podcast) => podcast.id))
+
+    // Check if podcast selection has changed
+    const hasSelectionChanged =
+      lastSelectedPodcastIds.value.size !== currentlySelectedIds.size ||
+      [...currentlySelectedIds].some((id) => !lastSelectedPodcastIds.value.has(id)) ||
+      [...lastSelectedPodcastIds.value].some((id) => !currentlySelectedIds.has(id))
+
+    // Update the last selected podcast ids
+    if (hasSelectionChanged) {
+      lastSelectedPodcastIds.value = currentlySelectedIds
+
+      // Reset initial render flag when selection changes
+      isInitialRender.value = true
+    }
 
     // Update color assignments
     colorStore.updateColorAssignments(currentlySelectedIds)
@@ -98,11 +113,30 @@ export const useCalendarStore = defineStore('calendar', () => {
     isInitialRender.value = true
   }
 
+  /**
+   * Check if the podcast selection has changed
+   */
+  function hasPodcastSelectionChanged(): boolean {
+    const selectedPodcasts = podcastStore.selectedPodcasts
+    const currentlySelectedIds = new Set(selectedPodcasts.map((podcast) => podcast.id))
+
+    const hasChanged =
+      lastSelectedPodcastIds.value.size !== currentlySelectedIds.size ||
+      [...currentlySelectedIds].some((id) => !lastSelectedPodcastIds.value.has(id)) ||
+      [...lastSelectedPodcastIds.value].some((id) => !currentlySelectedIds.has(id))
+
+    // Update the stored set
+    lastSelectedPodcastIds.value = currentlySelectedIds
+
+    return hasChanged
+  }
+
   return {
     // State
     lastViewStartDate,
     lastViewEndDate,
     isInitialRender,
+    lastSelectedPodcastIds,
 
     // Getters
     calendarEvents,
@@ -111,5 +145,6 @@ export const useCalendarStore = defineStore('calendar', () => {
     updateViewDateRange,
     findEpisodeById,
     resetInitialRenderFlag,
+    hasPodcastSelectionChanged,
   }
 })
