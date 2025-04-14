@@ -41,6 +41,8 @@ This document outlines the key assumptions made during the development of the Sp
    - Episode ordering within a day is based on podcast selection order, not release time
    - Users primarily need to identify which episodes were released on a given date, not the exact time span of each episode
    - A day-based grid provides better readability than a time-based grid, especially when displaying multiple podcasts
+   - The application displays all episode release dates in the local time zone of the user's browser
+   - Users are assumed to primarily care about the date of release rather than specific time zone adjustments
 
 ## Data Management
 
