@@ -1,5 +1,7 @@
 # SpoticastCalendar
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ge-m-zhang/spoticast-calendar-vue)
+
 A Vue 3 + TypeScript application for visualizing podcast episode release dates in a calendar interface.
 
 ## Overview
